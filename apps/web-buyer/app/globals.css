@@ -1,6 +1,51 @@
+:root {
+  --canvas: #f7f9f8;
+  --surface: #ffffff;
+  --surface-alt: #f0f5f3;
+  --text-primary: #17252a;
+  --text-secondary: #61717a;
+  --divider: #e2eae6;
+  --primary: #087e65;
+  --primary-hover: #066951;
+  --primary-soft: #e4f5ef;
+  --secondary: #183c42;
+  --success: #10835a;
+  --warning: #b7791f;
+  --danger: #d04444;
+  --info: #2463bc;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-card: 14px;
+  --radius-input: 10px;
+  --radius-button: 11px;
+
+  --nav-height: 72px;
+  --content-max: 1400px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
-  font-family: system-ui, sans-serif;
+  background: var(--canvas);
+  color: var(--text-primary);
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
 }
