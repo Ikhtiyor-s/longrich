@@ -1,0 +1,111 @@
+Requirement ID,Module tab,Subdomain,Capability,Detailed requirement,Priority,Status,Owner,Traceability,AC ID
+WEB-001,01 Buyer Web,Xaridor web,OTP authentication,"Telefon raqami va SMS OTP asosida login; max urinish, resend va lockout",P0,Planned,Owner TBD,Acceptance-linked,AC-WEB-001
+WEB-002,01 Buyer Web,Xaridor web,Catalog navigation,"Kategoriya daraxti, filtr, sort, regional availability",P0,Planned,Owner TBD,Acceptance-linked,AC-WEB-002
+WEB-003,01 Buyer Web,Xaridor web,Product detail,"Rasm, variant, seller offer, narx, ETA, sharh",P0,Planned,Owner TBD,Acceptance-linked,AC-WEB-003
+WEB-004,01 Buyer Web,Xaridor web,Cart and checkout UI,"Persistent cart, quote, address, payment selection",P0,Planned,Owner TBD,Acceptance-linked,AC-WEB-004
+WEB-005,01 Buyer Web,Xaridor web,Customer account,"Profil, manzil, wishlist, tarix, returns",P0,Planned,Owner TBD,Acceptance-linked,AC-WEB-005
+WEB-006,01 Buyer Web,Xaridor web,Responsive accessibility,"375px mobil, desktop, screen reader, responsive",P0,Planned,Owner TBD,Acceptance-linked,AC-WEB-006
+WEB-007,01 Buyer Web,Xaridor web,Localization,"uz/ru locale, SEO-friendly slugs",P1,Planned,Owner TBD,Acceptance-linked,AC-WEB-007
+WEB-008,01 Buyer Web,Xaridor web,Order tracking,Master order va shipmentlar timeline,P1,Planned,Owner TBD,Acceptance-linked,AC-WEB-008
+SEL-001,02 Seller,Seller onboarding,Seller application,"Legal entity, STIR va contactlar, application draft",P0,Planned,Owner TBD,Acceptance-linked,AC-SEL-001
+SEL-002,02 Seller,Seller onboarding,Document validation,"Hujjatlar, status, expires_at, verified",P0,Planned,Owner TBD,Acceptance-linked,AC-SEL-002
+SEL-003,02 Seller,Seller onboarding,Seller approval,"Moderator approval, reject reason, corrections",P0,Planned,Owner TBD,Acceptance-linked,AC-SEL-003
+SEL-004,02 Seller,Seller onboarding,Store settings,"Profil, logotip, working hours, delivery terms",P0,Planned,Owner TBD,Acceptance-linked,AC-SEL-004
+SEL-005,02 Seller,Seller onboarding,Seller team RBAC,"Owner, manager, operator va finance ruxsatlari",P0,Planned,Owner TBD,Acceptance-linked,AC-SEL-005
+SEL-006,02 Seller,Seller onboarding,Seller offer tools,"SKU, narx, media, qoldiq, import",P0,Planned,Owner TBD,Acceptance-linked,AC-SEL-006
+SEL-007,02 Seller,Seller onboarding,Seller order queue,"Confirm, pick, pack, dispatch",P1,Planned,Owner TBD,Acceptance-linked,AC-SEL-007
+SEL-008,02 Seller,Seller onboarding,Seller finance views,"Komissiya, statement, payout",P1,Planned,Owner TBD,Acceptance-linked,AC-SEL-008
+SEL-009,02 Seller,Seller onboarding,Seller suspension,"Yangi savdo to‘xtaydi, existing orders recovery",P1,Planned,Owner TBD,Acceptance-linked,AC-SEL-009
+CAT-001,03 Catalog,Global katalog,Category taxonomy,N-darajali kategoriyalar va atribut shablonlari,P0,Planned,Owner TBD,Acceptance-linked,AC-CAT-001
+CAT-002,03 Catalog,Global katalog,Global product,"Kanonik product, brand, title, description",P0,Planned,Owner TBD,Acceptance-linked,AC-CAT-002
+CAT-003,03 Catalog,Global katalog,Variants,Rang/o‘lcham/xotira va identifier,P0,Planned,Owner TBD,Acceptance-linked,AC-CAT-003
+CAT-004,03 Catalog,Global katalog,Barcode MXIK,"GTIN/EAN/UPC, MXIK classification and version",P0,Planned,Owner TBD,Acceptance-linked,AC-CAT-004
+CAT-005,03 Catalog,Global katalog,Offers,"Seller mahsulot taklifi, narxi, availability, fulfillment mode",P0,Planned,Owner TBD,Acceptance-linked,AC-CAT-005
+CAT-006,03 Catalog,Global katalog,Duplicate resolution,"Barcode+brand+model bo‘yicha candidate, moderator merge",P0,Planned,Owner TBD,Acceptance-linked,AC-CAT-006
+CAT-007,03 Catalog,Global katalog,Catalog moderation,"Product/offer draft, review, active, suspended",P1,Planned,Owner TBD,Acceptance-linked,AC-CAT-007
+CAT-008,03 Catalog,Global katalog,Bulk import,"CSV/XLSX mapping, per-row errors",P1,Planned,Owner TBD,Acceptance-linked,AC-CAT-008
+CAT-009,03 Catalog,Global katalog,Price history,Narxlar tarixini append-only saqlash,P1,Planned,Owner TBD,Acceptance-linked,AC-CAT-009
+CAT-010,03 Catalog,Global katalog,Media,"Image/video, content validation va thumbnails",P1,Planned,Owner TBD,Acceptance-linked,AC-CAT-010
+INV-001,04 Inventory,Qoldiq va rezerv,Warehouse stock,Per seller offer/warehouse qoldiq,P0,Planned,Owner TBD,Acceptance-linked,AC-INV-001
+INV-002,04 Inventory,Qoldiq va rezerv,Atomic reserve,Parallel checkoutda oversell yo‘q,P0,Planned,Owner TBD,Acceptance-linked,AC-INV-002
+INV-003,04 Inventory,Qoldiq va rezerv,Reservation TTL,15 min configurable; expiry/reconcile,P0,Planned,Owner TBD,Acceptance-linked,AC-INV-003
+INV-004,04 Inventory,Qoldiq va rezerv,Reserve commit/release,Idempotent stock lifecycle,P0,Planned,Owner TBD,Acceptance-linked,AC-INV-004
+INV-005,04 Inventory,Qoldiq va rezerv,Adjustments,"Reason, actor, movements, approval",P0,Planned,Owner TBD,Acceptance-linked,AC-INV-005
+INV-006,04 Inventory,Qoldiq va rezerv,Physical stock audit,Stocktake va difference investigation,P0,Planned,Owner TBD,Acceptance-linked,AC-INV-006
+INV-007,04 Inventory,Qoldiq va rezerv,Low stock,Threshold and notifications,P1,Planned,Owner TBD,Acceptance-linked,AC-INV-007
+INV-008,04 Inventory,Qoldiq va rezerv,Warehouse transfer,"Source/destination, in transit, receipt",P1,Planned,Owner TBD,Acceptance-linked,AC-INV-008
+ORD-001,05 Orders,Checkout va orders,Cart persistence,Guest cart merge va login persistence,P0,Planned,Owner TBD,Acceptance-linked,AC-ORD-001
+ORD-002,05 Orders,Checkout va orders,Quote validation,"Price, availability, address, shipping revalidation",P0,Planned,Owner TBD,Acceptance-linked,AC-ORD-002
+ORD-003,05 Orders,Checkout va orders,Master and suborders,Seller/fulfillment group bo‘yicha split,P0,Planned,Owner TBD,Acceptance-linked,AC-ORD-003
+ORD-004,05 Orders,Checkout va orders,Payment intent,Checkoutdan payment orchestration,P0,Planned,Owner TBD,Acceptance-linked,AC-ORD-004
+ORD-005,05 Orders,Checkout va orders,Order transitions,Explicit state machine va history,P0,Planned,Owner TBD,Acceptance-linked,AC-ORD-005
+ORD-006,05 Orders,Checkout va orders,Cancellation,Per-item/per-suborder va refund consequences,P0,Planned,Owner TBD,Acceptance-linked,AC-ORD-006
+ORD-007,05 Orders,Checkout va orders,Mixed fulfillment,Bir savatchada seller/fulfillment modes,P1,Planned,Owner TBD,Acceptance-linked,AC-ORD-007
+ORD-008,05 Orders,Checkout va orders,Idempotent checkout,Duplicate request bitta orderga olib keladi,P1,Planned,Owner TBD,Acceptance-linked,AC-ORD-008
+FIN-001,06 Finance,Komissiya va ledger,Commission policies,Seller/category va effective date asosida bps,P0,Planned,Owner TBD,Acceptance-linked,AC-FIN-001
+FIN-002,06 Finance,Komissiya va ledger,Commission snapshots,Order-item charge calculation snapshot,P0,Planned,Owner TBD,Acceptance-linked,AC-FIN-002
+FIN-003,06 Finance,Komissiya va ledger,Balanced ledger,"Debits equals credits, immutable entries",P0,Planned,Owner TBD,Acceptance-linked,AC-FIN-003
+FIN-004,06 Finance,Komissiya va ledger,Seller balances,Pending/available/held payable,P0,Planned,Owner TBD,Acceptance-linked,AC-FIN-004
+FIN-005,06 Finance,Komissiya va ledger,Settlement,"Period, approvals va reconciliation",P0,Planned,Owner TBD,Acceptance-linked,AC-FIN-005
+FIN-006,06 Finance,Komissiya va ledger,Payout,"Bank payout status, reference, failure handling",P0,Planned,Owner TBD,Acceptance-linked,AC-FIN-006
+FIN-007,06 Finance,Komissiya va ledger,Refund accounting,"Compensating entries, no delete",P1,Planned,Owner TBD,Acceptance-linked,AC-FIN-007
+FIN-008,06 Finance,Komissiya va ledger,Statements,Seller finance export va traceable totals,P1,Planned,Owner TBD,Acceptance-linked,AC-FIN-008
+LOG-001,07 Logistics,Seller delivery,Delivery zones,Viloyat/tuman/geo rules,P0,Planned,Owner TBD,Acceptance-linked,AC-LOG-001
+LOG-002,07 Logistics,Seller delivery,Delivery tariffs,"Base, weight, order value rules",P0,Planned,Owner TBD,Acceptance-linked,AC-LOG-002
+LOG-003,07 Logistics,Seller delivery,Delivery quote,Seller zones and ETA eligibility,P0,Planned,Owner TBD,Acceptance-linked,AC-LOG-003
+LOG-004,07 Logistics,Seller delivery,Shipment creation,Shipment-item grouping/tracking code,P0,Planned,Owner TBD,Acceptance-linked,AC-LOG-004
+LOG-005,07 Logistics,Seller delivery,Tracking events,"Carrier callbacks, status history",P0,Planned,Owner TBD,Acceptance-linked,AC-LOG-005
+LOG-006,07 Logistics,Seller delivery,Dispatch,Operator confirms handover,P0,Planned,Owner TBD,Acceptance-linked,AC-LOG-006
+LOG-007,07 Logistics,Seller delivery,Delivery proof,OTP/QR/photo per policy,P1,Planned,Owner TBD,Acceptance-linked,AC-LOG-007
+LOG-008,07 Logistics,Seller delivery,Failure return,"Failed attempts, reschedule, returns",P1,Planned,Owner TBD,Acceptance-linked,AC-LOG-008
+ADM-001,08 Admin,Super Admin,Admin dashboard,"GMV, orders, active sellers, refund, payout metrics",P0,Planned,Owner TBD,Acceptance-linked,AC-ADM-001
+ADM-002,08 Admin,Super Admin,Seller management,Onboarding and suspension review,P0,Planned,Owner TBD,Acceptance-linked,AC-ADM-002
+ADM-003,08 Admin,Super Admin,Product moderation,Duplicate/conflict and review queues,P0,Planned,Owner TBD,Acceptance-linked,AC-ADM-003
+ADM-004,08 Admin,Super Admin,Order oversight,All orders per permission,P0,Planned,Owner TBD,Acceptance-linked,AC-ADM-004
+ADM-005,08 Admin,Super Admin,Finance approvals,Dual approval for high risk actions,P0,Planned,Owner TBD,Acceptance-linked,AC-ADM-005
+ADM-006,08 Admin,Super Admin,Warehouse monitoring,Inbound/picking/shipping visibility,P0,Planned,Owner TBD,Acceptance-linked,AC-ADM-006
+ADM-007,08 Admin,Super Admin,Admin RBAC,Fine-grained action permissions,P1,Planned,Owner TBD,Acceptance-linked,AC-ADM-007
+ADM-008,08 Admin,Super Admin,Audit log,Actor/action/entity/before-after/request-id,P1,Planned,Owner TBD,Acceptance-linked,AC-ADM-008
+ADM-009,08 Admin,Super Admin,Feature flags,Per-module controlled rollouts,P1,Planned,Owner TBD,Acceptance-linked,AC-ADM-009
+OPS-001,09 Operations,"Refund, support, SEO, notifications",Returns workflow,Requested/reviewed/approved/inspected/closed,P0,Planned,Owner TBD,Acceptance-linked,AC-OPS-001
+OPS-002,09 Operations,"Refund, support, SEO, notifications",Partial refund,Per item amount constraints,P0,Planned,Owner TBD,Acceptance-linked,AC-OPS-002
+OPS-003,09 Operations,"Refund, support, SEO, notifications",Dispute resolution,"Evidence, decision, audit",P0,Planned,Owner TBD,Acceptance-linked,AC-OPS-003
+OPS-004,09 Operations,"Refund, support, SEO, notifications",Support ticket,"Order/seller linked tickets, SLA",P0,Planned,Owner TBD,Acceptance-linked,AC-OPS-004
+OPS-005,09 Operations,"Refund, support, SEO, notifications",Support messages,Customer/public and agent/internal messages,P0,Planned,Owner TBD,Acceptance-linked,AC-OPS-005
+OPS-006,09 Operations,"Refund, support, SEO, notifications",SEO product pages,"SSR, canonical URL, metadata, schema",P0,Planned,Owner TBD,Acceptance-linked,AC-OPS-006
+OPS-007,09 Operations,"Refund, support, SEO, notifications",Sitemap robots,Only public indexable pages,P1,Planned,Owner TBD,Acceptance-linked,AC-OPS-007
+OPS-008,09 Operations,"Refund, support, SEO, notifications",CMS,Page/banner publishing schedule,P1,Planned,Owner TBD,Acceptance-linked,AC-OPS-008
+OPS-009,09 Operations,"Refund, support, SEO, notifications",Notifications,"SMS, push, email; preference and templates",P1,Planned,Owner TBD,Acceptance-linked,AC-OPS-009
+OPS-010,09 Operations,"Refund, support, SEO, notifications",Notification idempotency,"Event-based dedupe, retry, delivery status",P1,Planned,Owner TBD,Acceptance-linked,AC-OPS-010
+MOB-001,10 Mobile,Flutter Android iOS,Cross platform app,"Flutter Android/iOS, common REST API",P0,Planned,Owner TBD,Acceptance-linked,AC-MOB-001
+MOB-002,10 Mobile,Flutter Android iOS,Mobile OTP,"Secure token storage, anti-bruteforce",P0,Planned,Owner TBD,Acceptance-linked,AC-MOB-002
+MOB-003,10 Mobile,Flutter Android iOS,Catalog experience,"Home, category, product, search",P0,Planned,Owner TBD,Acceptance-linked,AC-MOB-003
+MOB-004,10 Mobile,Flutter Android iOS,Checkout mobile,"Secure payment redirect, return verification",P0,Planned,Owner TBD,Acceptance-linked,AC-MOB-004
+MOB-005,10 Mobile,Flutter Android iOS,Order status,Web/mobile consistent order state,P0,Planned,Owner TBD,Acceptance-linked,AC-MOB-005
+MOB-006,10 Mobile,Flutter Android iOS,Push notifications,Device registration/consent,P0,Planned,Owner TBD,Acceptance-linked,AC-MOB-006
+MOB-007,10 Mobile,Flutter Android iOS,Deep link,Verified order URL app association,P1,Planned,Owner TBD,Acceptance-linked,AC-MOB-007
+MOB-008,10 Mobile,Flutter Android iOS,Offline behavior,Read cache; no offline order confirmation,P1,Planned,Owner TBD,Acceptance-linked,AC-MOB-008
+MOB-009,10 Mobile,Flutter Android iOS,App compatibility,Minimum versions/force update,P1,Planned,Owner TBD,Acceptance-linked,AC-MOB-009
+MOB-010,10 Mobile,Flutter Android iOS,Accessibility,"Dynamic font, screen reader, layout",P1,Planned,Owner TBD,Acceptance-linked,AC-MOB-010
+PAY-001,11 Payments,Click Payme,Payment intent,One active intent and status,P0,Planned,Owner TBD,Acceptance-linked,AC-PAY-001
+PAY-002,11 Payments,Click Payme,Click adapter,Prepare/complete with official signed protocol,P0,Planned,Owner TBD,Acceptance-linked,AC-PAY-002
+PAY-003,11 Payments,Click Payme,Payme adapter,Merchant API methods and transaction mapping,P0,Planned,Owner TBD,Acceptance-linked,AC-PAY-003
+PAY-004,11 Payments,Click Payme,Callback verification,"Authenticate, amount/currency check",P0,Planned,Owner TBD,Acceptance-linked,AC-PAY-004
+PAY-005,11 Payments,Click Payme,Idempotent webhook,Dedup transaction callbacks,P0,Planned,Owner TBD,Acceptance-linked,AC-PAY-005
+PAY-006,11 Payments,Click Payme,Payment recovery,"Late callbacks, status query, conflicts",P0,Planned,Owner TBD,Acceptance-linked,AC-PAY-006
+PAY-007,11 Payments,Click Payme,Partial refunds,Provider capability dependent,P1,Planned,Owner TBD,Acceptance-linked,AC-PAY-007
+PAY-008,11 Payments,Click Payme,Reconciliation,Bank/PSP statement versus internal ledger,P1,Planned,Owner TBD,Acceptance-linked,AC-PAY-008
+PAY-009,11 Payments,Click Payme,Sandbox production,Env-specific credentials and test coverage,P1,Planned,Owner TBD,Acceptance-linked,AC-PAY-009
+FUL-001,12 Fulfillment,O‘z fulfillment omborlari,Fulfillment center,"Warehouse facilities, access roles",P0,Planned,Owner TBD,Acceptance-linked,AC-FUL-001
+FUL-002,12 Fulfillment,O‘z fulfillment omborlari,Bin topology,Zone/aisle/rack/bin location,P0,Planned,Owner TBD,Acceptance-linked,AC-FUL-002
+FUL-003,12 Fulfillment,O‘z fulfillment omborlari,Inbound ASN,Seller expected goods / shipment,P0,Planned,Owner TBD,Acceptance-linked,AC-FUL-003
+FUL-004,12 Fulfillment,O‘z fulfillment omborlari,Receiving,Expected versus counted mismatch,P0,Planned,Owner TBD,Acceptance-linked,AC-FUL-004
+FUL-005,12 Fulfillment,O‘z fulfillment omborlari,Quality control,Accepted/rejected/quarantine,P0,Planned,Owner TBD,Acceptance-linked,AC-FUL-005
+FUL-006,12 Fulfillment,O‘z fulfillment omborlari,Putaway,Scan bin and task completion,P0,Planned,Owner TBD,Acceptance-linked,AC-FUL-006
+FUL-007,12 Fulfillment,O‘z fulfillment omborlari,Seller ownership,Separate consigned stock seller_id,P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-007
+FUL-008,12 Fulfillment,O‘z fulfillment omborlari,Picking,"FEFO optional, tasks and scan",P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-008
+FUL-009,12 Fulfillment,O‘z fulfillment omborlari,Packing,"Parcel labels, weight, dimensions",P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-009
+FUL-010,12 Fulfillment,O‘z fulfillment omborlari,Dispatch,Shipment handover/manifest,P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-010
+FUL-011,12 Fulfillment,O‘z fulfillment omborlari,Stocktake,"Reconciliation, supervisor approval",P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-011
+FUL-012,12 Fulfillment,O‘z fulfillment omborlari,Return inbound,QC and restocking,P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-012
+FUL-013,12 Fulfillment,O‘z fulfillment omborlari,Batch serial tracking,Expiry/lot/serial when required,P1,Planned,Owner TBD,Acceptance-linked,AC-FUL-013

@@ -1,0 +1,11 @@
+{
+  "name": "@longrich/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared ESLint/TypeScript/Prettier base configs consumed by apps/* via relative path.",
+  "exports": {
+    "./eslint-base": "./eslint-base.mjs",
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./prettier-base.json": "./prettier-base.json"
+  }
+}

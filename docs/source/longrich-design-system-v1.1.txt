@@ -1,0 +1,106 @@
+02 — LONGRICH DESIGN SYSTEM, UI/UX, EKRANLAR VA ACCEPTANCE
+
+
+LONGRICH MARKETPLACE — DESIGN SYSTEM & FULL UX/UI SPECIFICATION v1.1
+ADDENDUM: MASTER BLUEPRINTNING MAJBURIY DIZAYN QISMI
+Sana: 18.10.2026 | Dizayn statusi: APPROVED DIRECTION, developer implementation specs
+Bu bo‘lim 01–36 asosiy master blueprint va R1–R4/EXT-001…EXT-022 kengaytmalariga QO‘SHIMCHA. Oldingi biznes qoidalar, xarid oqimi, to‘lov, WMS, review 90 kun, PVZ 5 kun, repricing ±10%/24h, B2B quote 7 kun, role va legal blockerlarni o‘zgartirmaydi. Tasvirdagi ilhomlantiruvchi Barcode Katalog konseptidagi vizual ritm — ochiq fon, premium kartalar, ixcham yashil CTA, savdo mahsulotlarini aniq ko‘rsatish — olinadi, lekin LONGRICH brendi, haqiqiy marketplace checkout/order strukturasi va original dizayn talab qilinadi. Barcode Katalog o‘ziga xos admin/ma’lumot platformasi; Longrich — full multi-vendor commerce. Ikki loyiha bir xil nom/DB/API sifatida birlashtirilmasin.
+DES-001 DESIGN VISION
+Premium, modern, trustworthy, Uzbek retail-oriented omnichannel marketplace. Oq/och-kulrang maydon, toza product photography, maksimal foydalanish qulayligi; reklama bannerdan ko‘ra real mahsulot topish, do‘kon tanlash va xavfsiz buyurtma ustuvor. Consumer UI (Buyer Web/Flutter) soddaroq, conversion-oriented; Seller/Admin/WMS maxsus professional data-dense workspace. Pixel-copy Uzum yoki boshqa brand UI, logotip/trademark/assets taqiqlangan. Longrich logo va palette yakuniy brand asset sifatida egasi tasdiqlamaguncha placeholder "LONGRICH Marketplace" typed logotype ishlatiladi.
+DES-002 DESIGN TOKENS
+Buyer light theme boshlang‘ich tokenlar: canvas #F7F9F8; surface #FFFFFF; surfaceAlt #F0F5F3; textPrimary #17252A; textSecondary #61717A; divider #E2EAE6; primary #087E65; primaryHover #066951; primarySoft #E4F5EF; secondary #183C42; success #10835A; warning #B7791F; danger #D04444; info #2463BC. Dark theme supported with WCAG AA contrast, not black-on-dark. Color token configuration; prefer contrast >=4.5:1 normal text, focus ring visible, success/error do not depend only on hue.
+Typography Inter/Manrope/Public Sans with valid licenses + system fallback; UZ/RU glyph tests. Headings 28–36/22–28/18–22; body 14–16; caption 12–13. 4/8px spacing steps (4,8,12,16,20,24,32,40,48); radii 10–16px cards, 8–12px inputs, 10–12px button; minimal soft shadows. Mono figures for barcodes/order/price refs; all prices UZS localized: "12 500 so‘m". No arbitrary font sizes or hardcoded component-specific colors.
+Image ratio cards 1:1 object-contain for packaged products, 4:3/16:9 lifestyle/banner imagery. No cropped labels/food products, blur/lazy-load/placeholder. Responsive image variants; real merchant images rights/attribution.
+DES-003 RESPONSIVE BREAKPOINTS AND APP CHROME
+Test 320, 360, 375, 390, 768, 1024, 1366, 1440 and 1920 px. Buyer Web desktop: sticky top navigation height 64–80, brand/logo, catalog dropdown, central wide search, location/delivery selector, language UZ/RU, account, wishlist, cart badge. Optional thin utility bar for order/support, not overcrowded. Layout max content width 1360–1440 with fluid margins 20–32. Mobile: compact brand/search, scan button, cart, bottom navigation (Home, Categories, Scan/Search, Favorites, Profile) with safe areas. Sticky add-to-cart on mobile detail. Never force desktop three-column checkout onto 360px; cards stack.
+Seller/Admin/WMS: 248px collapsible sidebar, 60px topbar with breadcrumbs/search/notifications/profile. Dense tables with sticky header, server-side pagination, mobile cards or controlled horizontal scroll. Warehouse scanning routes prioritize large touch targets and high contrast.
+DES-004 BUYER WEB INFORMATION ARCHITECTURE
+Routes (proposed Next.js App Router; adapt to code reality):
+/ home;
+/catalog/[categorySlug] category;
+/search search, faceted filters;
+/product/[slug] product+variants;
+/product/[slug]/offers offer comparison (or same product detail tab);
+/compare compare tray (2–4 variants, EXT-001);
+/stores store directory;
+/stores/[slug] seller storefront;
+/cart cart;
+/checkout address-delivery-payment stepper;
+/checkout/result/[id] payment pending/succeeded/failed (provider callback still authoritative);
+/orders and /orders/[id] timeline;
+/orders/[id]/return and /returns/[id];
+/favorites wishlist;
+/account profile/addresses/notifications/preferences;
+/support FAQ/tickets;
+/price-alerts price history/alerts EXT-002;
+/b2b conditional wholesale/RFQ routes only per feature flag;
+/pickup only where eligible PVZ data and operational capabilities exist.
+All routes must maintain page title, canonical SEO for public listing, locale alternates, access guard, skeleton, empty/error/offline/retry, analytics event, permission-specific controls.
+DES-005 BUYER HOME — PIXEL-LEVEL COMPOSITION GUIDELINE
+Desktop first viewport: top navigation, generous hero 2/3 width with message/illustration/approved category lifestyle photo and prominent search or campaign CTA, 1/3 promo/editorial card optional. Below: six compact quick-access icons (Categories, Deals, Scanner, New, Delivery, Brands), category card grid (6 columns desktop, 2–3 mobile), curated product carousels, popular offers, verified sellers and trust/reassurance strip. Use personalized recommendations only with appropriate data and consent; default trending from real published offers. Hero promotional materials from real CMS; do not invent countdown/deal claim. Above-the-fold clearly show what the marketplace sells and primary action.
+Category tiles: product crop + localized label + product count only if API supplies it. Product cards: image, favorite action, seller/verified badge, readable 2-line title, compact rating verified purchase metric, current UZS price, previous price struck only if genuine and legal, availability, delivery estimate only from eligible service, add-to-cart button. Different sellers' offers must not silently combine prices, stock or delivery terms.
+DES-006 CATALOG / SEARCH / FILTER / CATEGORY
+Desktop left faceted filter 240–280px (category, brand, price range, seller, rating, available, delivery, region, offer type), top sorting (relevance, price, newest, popularity from real metrics), results count, responsive 4–5 column product grid. Tablet 3 columns, mobile 2 with drawer filters and clear active chips. Search supports GTIN, synonyms, UZ/RU transliterations if indexed, typo tolerant ranking; do not invent result count. Faceted URLs SEO strategy from original blueprint. Filter changes update URL; keyboard and reset.
+Empty results: search term, guidance and clear filters; no fabricated recommendations in production.
+DES-007 PRODUCT DETAIL — HIGH FIDELITY SPEC
+Above fold desktop: gallery thumbnails left, hero image, central product header/title/category/brand, rating+verified review count, selected variant attributes, seller offer selector right with true price/stock/delivery and "Savatga qo‘shish". Multi-vendor: compare offers by seller name, actual listed price, delivery window/fee, stock availability, fulfillment mode, seller reputation; one selected offer per cart line. A seller offer is not a duplicate global product. Localized long descriptions/specs; GTIN barcode and MXIK in "Texnik ma’lumotlar" where verified. Under fold tabs: Tavsif, Xususiyatlar, Narx tarixi (EXT-002), Do‘konlar, Savol-javob (EXT-003), Sharhlar (EXT-004 verified purchase, 90-day). Media gallery controls keyboard/touch. Invalid variant/out-of-stock action disabled with clear alternative. Price alerts accessible on variant level if enabled. Compare trigger EXT-001 supports 2–4 comparable variants only.
+Mobile product sticky purchase bar and offer picker bottom sheet; specs/reviews as accordions or tabs. Never show checkout total based on client-only calculations.
+DES-008 SELLER STOREFRONT + MULTI-VENDOR TRUST
+Store profile: banner, logo, verified seller status, ratings from genuine data, customer service response/fulfillment policy, location or zones, storefront categories, live offers, delivery/return terms, contact channel with safe moderation. "Seller delivery" and "Longrich fulfillment" visually distinct, not conflated. Store availability from seller account ACTIVE and offer ACTIVE. No invented sales figures/rating.
+DES-009 CART
+Desktop two-column: cart lines left grouped clearly by seller/sub-order, order estimate/checkout summary sticky right; mobile one column plus sticky total bar. Line item: thumbnail, variant, seller, fulfillment, unit price, quantity stepper, stock limit, remove, save to favorites. Display multi-seller shipping separately by group; total before quote labeled estimated. If seller suspended, stock changed or price changed: visible conflict/refresh state. Guest cart persistent and merge strategy from original TZ. Do not make optimistic success on stock reservation without server response. Promo code exact validation and errors.
+DES-010 CHECKOUT
+Progress stepper 1 Address → 2 Delivery → 3 Payment → 4 Confirmation; correct responsive desktop layout: form/steps left, order summary right. Address structured Uzbekistan region/district, street/landmark; map pin optional permission with manual input fallback. Delivery: seller delivery, own WMS delivery, pickup/PVZ where enabled, ETA+fees from quote; 5-day PVZ holding under approved policy. Payment: Click/Payme + other approved providers only, fee/discount/tax snapshot, explicit consent/terms, secure redirect/provider SDK; no card PAN/CVV handled/stored by marketplace frontend outside approved PCI scope. Retry, pending, failed and return from PSP clearly differentiated. Server-generated quote/availability + expiry and reapproval on change; idempotent final submit. Master order + seller suborders visual summary. On payment redirect return, do not claim paid until backend/provider verifies.
+DES-011 ORDER HISTORY / DETAIL / TRACKING / RETURNS
+Account orders list tabs All, Awaiting Payment, Preparing, Shipping, Delivered, Cancelled; each row: order number/date/status/amount/item thumbs/CTA. Order detail master summary + per seller sub-order status and per shipment tracking; timeline of Created/Paid/Processing/Shipped/Delivered as applicable, no false state. Support/cancel actions only where authorized state permits, partial cancel and split deliveries understandable.
+Return request: select item+qty, reason, evidence, eligibility rules, RMA timeline, review/refund status; partial item return, refusal reason, provider refund pending states clearly visible. Payment/account information masked.
+DES-012 FAVORITES, COMPARE, ALERTS, REVIEWS AND Q&A
+Favorites cards same product grid, accessible remove, price change indication if eligible. Compare page 2–4 side-by-side compatible variants, highlight different characteristics and offers, mobile horizontal scroll accessible and sticky product headers.
+Price history shows verified historical offer values and coverage interval; price target alert has clear frequency/consent and disable/unsubscribe. Review composer enabled only verified delivered buyer ≤90 days from delivered_at, media progress and moderation status. Questions seller answered with public moderation, no personal order data. Never forge reviews/ratings; empty count real zero.
+DES-013 MOBILE FLUTTER DESIGN PARITY
+Shared design tokens exported/mapped consistently between Next.js and Flutter, but Flutter uses native-safe layouts. Bottom nav with 4–5 essential buyer destinations, floating scan only if camera permission granted; camera denied has manual barcode input and gallery fallback. Portrait 360–430, tablets, safe areas, large touch controls 44–48dp, keyboard overlays handled, screen reader, dark mode. Scan result shows canonical variant and seller offers; barcode error clear. Deep link product/order; do not store payment secrets; push settings and localization tested. Animations subtle 150–250ms, reduced motion option.
+DES-014 SELLER PORTAL DESIGN
+Seller onboarding wizard: legal entity→KYB docs→bank/contact→contract→review; persistent draft/progress/status/rejection reason with edit/resubmit. Seller dashboard KPIs real (active offers, pending orders, sellable stock, payouts, moderation); no global competitor private data. Catalog list with product matching and barcode scan→existing global variant or proposal; seller offer form and bulk import wizard; price change/history with R2 ±10%/24h repricing bounds and audit only when feature enabled. Stock/warehouses, orders pick/dispatch, shipments, statements and reconciliation, tickets, ads, B2B quote modules gated by release flags. One seller scope always, seller staff RBAC server-side.
+Information hierarchy: Overview / Catalog & Offers / Inventory / Orders / Delivery / Finance / Analytics / Team / Settings. Data tables: filters, column chooser, server pagination, bulk actions with validation. Owner/manager/operator permission distinctions visible but enforced backend.
+DES-015 SUPER ADMIN DESIGN
+Admin home with GMV/orders/revenue/seller KYB/pending catalog moderation/returns/WMS signals from true sources. Side navigation Overview; Sellers & KYB; Global Catalog & GTIN Conflicts; Offers & Moderation; Orders & Shipping; Payments, Refunds & Ledger; Settlements (maker-checker); Warehouse/WMS; Returns & Support; CMS, SEO & Promotions; Pricing Center (R2); PVZ management (R3); B2B approval (R4); Users/RBAC; Audit/System/Integrations.
+Moderation comparison two-pane, reject reason compulsory, no silent data erase; maker-checker payouts separated by distinct actors, confirmation modals. Sensitive user data masked/role-limited; high-risk controls not achievable through mere front-end toggles. Charts load actual aggregation and retain drilldowns/period filters.
+DES-016 WMS & PVZ OPERATOR UI
+Warehouse screens industrial, low-clutter with scan-first interaction. Receiving: ASN and item scan, expected vs received qty, variance confirm; QC approve/reject/quarantine with photos; Putaway expected bin/path verification; Pick queue tasks atomic claim; Packing status label/weight/dimensions; handover scanner event; cycle count discrepancies. Status success/error full width and audible/haptic feedback only if available/accessible. Cannot skip wrong bin/expired lot. WMS touch target ~48px; keyboard barcode scanner Enter flow. Warehouse worker only own center.
+PVZ: incoming parcels, scanned arrival, ready pickup, 5-day hold deadline, OTP/QR recipient verification, release/expired/escalated state, separate partner-operator permissions. Closure/holiday exception kept OPEN decision, no invented automatic policy.
+DES-017 DESIGN COMPONENT LIBRARY
+AppShell, Header, Sidebar, MobileNav, SearchCombobox, ProductCard, CategoryTile, SellerBadge, PriceBlock, OfferComparison, DiscountBadge, BarcodeLookup, Breadcrumb, Tabs, Dropdown, Drawer, FilterChips, Ratings, QuantityStepper, CartItem, StickyCartSummary, CheckoutStepper, AddressForm, DeliveryOption, PaymentOption, OrderStatusTimeline, RmaStepper, NotificationItem, PhotoGallery, DataTable, DataGrid, KPI, Bar/LineChart, AuditDiff, ScannerOverlay, Wizard, FileUploader, Skeleton, EmptyState, ErrorPanel, ConfirmationDialog, Toast, PermissionGate. Components typed, documented, tested and shared by Web roles where appropriate; business-specific variants, not copy/paste CSS per screen.
+Each state: default/hover/focus/active/disabled/loading/error/success/empty/403/404/timeout/conflict; proper fallback images.
+DES-018 PRODUCT CONTENT & TRUST PRESENTATION
+Only authenticated verified-purchase review badge; only confirmed seller or product certification claims; no deceptive "only 1 left", fake discounts, fake recent purchase popup, false countdown. Seller-offer price is publicly available in marketplace because listing is seller-published, distinct from Barcode Katalog's confidential partner price intake. Purchase cost, private margin, GMV and internal stock movement never public. Accessibility/contrast and visual honesty are core requirements.
+DES-019 QUALITY AND RESPONSIVENESS
+WCAG 2.2 AA target; semantic HTML, complete keyboard flows, focus indicators, accessible dialog escape and announcements, visual chart table alternative, alt text from actual item, aria labels on icons and barcode scanner. All labels UZ/RU via i18n key, pluralization and currency/number formats consistent. Contrast at least 4.5:1 normal text and 3:1 large/UI indicators. Color-blind-friendly state labels. Test screen sizes 320/360/375/390/768/1024/1366/1440, browser Chrome/Firefox/Safari and Flutter Android/iOS. Target avoid CLS on images, defer nonessential assets, SEO SSR first content, skeleton transitions. No horizontal overflow except intentional comparison/data grid.
+DES-020 DESIGN ACCEPTANCE TESTS
+DES-AC-001 Buyer homepage with real CMS/category/offer data and documented empty fallback at desktop and mobile.
+DES-AC-002 Category/search fully functional filters/sort/deep-link/back navigation, no mock counts.
+DES-AC-003 Product gallery and variants real, multi-seller offers distinguish price/stock/delivery independently.
+DES-AC-004 Compare 2–4 compatible variants; invalid category rejected.
+DES-AC-005 Cart groups seller offers, stock change triggers quote refresh and clear message.
+DES-AC-006 Checkout quote matches server authoritative UZS amount, payment pending does not show PAID before callback verification.
+DES-AC-007 Address and delivery eligible for selected seller/warehouse and PVZ flag.
+DES-AC-008 Orders show master/suborder/shipment timeline correctly; return partial quantity allowed only by policy.
+DES-AC-009 Wishlist persists and account/OTP protects private data.
+DES-AC-010 Reviews allowed only verified delivered buyer inside 90-day deadline; other reviewer blocked.
+DES-AC-011 Seller onboarding and offer mapping use real API, no cross-seller leakage.
+DES-AC-012 Admin KYB, moderation, finance approvals and audit under RBAC/maker-checker.
+DES-AC-013 WMS scan-flow blocks wrong bin, quarantine, expired lots and duplicate task claim.
+DES-AC-014 Flutter screens follow design token parity while remaining native usable; camera denied fallback.
+DES-AC-015 320–1440px buyer/seller/admin/WMS screenshots checked; no broken overflow or hidden primary CTA.
+DES-AC-016 UZ/RU content and accessibility audited; no incomplete translation or keyboard traps.
+DES-AC-017 Loading/empty/error/offline/429/409/403 and payment timeout tested through Playwright/Flutter tests.
+DES-AC-018 All visual data charts use real backend; mock data exclusively in clearly marked development fixtures.
+DES-AC-019 Performance/visual regression budgets and screenshots captured, changes reviewed.
+DES-AC-020 No pixel copying of third party assets or code; original Longrich identity.
+DES-021 VISUAL DELIVERY WORKFLOW FOR CLAUDE
+Step 1: read this entire Master TZ and R1–R4 extensions, inspect actual repo UI/logic, write Design Gap Analysis and role-based sitemap.
+Step 2: create high-fidelity reusable design tokens and component catalogue; produce initial real screen prototypes (Home, Search, Product, Cart, Checkout, Orders, Seller Dashboard, Admin Moderation, WMS Receive).
+Step 3: capture local Playwright screenshots at 1440px and 390px for Buyer and 1366px Seller/Admin/WMS; inspect clipping/contrast; update visual baselines.
+Step 4: wire only authorized real APIs; do not show placeholders as completed. Implement role-specific screen inventory in phased PRs with end-to-end tests.
+Step 5: verify against DES-AC and original WEB-/SEL-/CAT-/FIN-/FUL-/EXT- acceptance tests. Each screen must have route, data source, controls, state machine, validation, responsive behaviors, i18n, roles and automated test evidence.
+Step 6: no production deployment or destructive migration without explicit user approval. Missing business/legal details go to open-questions and blocked features rather than fabricated behavior.
+END OF DESIGN ADDENDUM v1.1

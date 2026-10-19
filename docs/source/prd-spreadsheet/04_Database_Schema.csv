@@ -1,0 +1,92 @@
+Module,Table,Columns (draft),Primary key,Constraints and refs,Delivery
+WEB,users,id UUID PK; phone text unique; phone_verified_at timestamptz; status enum,PK id unless composite,FK/unique/check per design,Migration pending
+WEB,customer_profiles,id; user_id FK; first_name; last_name,PK id unless composite,FK/unique/check per design,Migration pending
+WEB,customer_addresses,id; user_id FK; region_id; district_id; address_line; lat; lng; is_default,PK id unless composite,FK/unique/check per design,Migration pending
+WEB,wishlists,id; user_id FK,PK id unless composite,FK/unique/check per design,Migration pending
+WEB,wishlist_items,"id; wishlist_id FK; product_id FK; unique(wishlist_id,product_id)",PK id unless composite,FK/unique/check per design,Migration pending
+SEL,sellers,id; legal_name; display_name; tax_id; legal_type; status; verified_at,PK id unless composite,FK/unique/check per design,Migration pending
+SEL,seller_applications,id; seller_id; status; submitted_at; reviewed_by; rejection_reason,PK id unless composite,FK/unique/check per design,Migration pending
+SEL,seller_documents,id; seller_id; type; object_key; verification_status; expires_at,PK id unless composite,FK/unique/check per design,Migration pending
+SEL,seller_members,id; seller_id; user_id; role_id; status,PK id unless composite,FK/unique/check per design,Migration pending
+SEL,seller_bank_accounts,id; seller_id; bank_code; account_reference; verification_status,PK id unless composite,FK/unique/check per design,Migration pending
+SEL,seller_contracts,id; seller_id; version; accepted_at; signed_document_key,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,categories,id; parent_id; slug; status; sort_order,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,category_attributes,id; category_id; attribute_key; data_type; required; validation_rules,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,brands,id; name; slug; verification_status,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,products,id; brand_id; category_id; title; description; status; canonical_product_id,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,product_variants,id; product_id; sku_internal; option_values; status,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,product_identifiers,id; variant_id; identifier_type; value,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,product_attribute_values,variant_id; attribute_id; value_json,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,seller_offers,id; seller_id; variant_id; seller_sku; price_minor; status; fulfillment_mode,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,offer_price_history,id; offer_id; old_price_minor; new_price_minor; changed_at,PK id unless composite,FK/unique/check per design,Migration pending
+CAT,product_media,id; product_id; object_key; sort_order,PK id unless composite,FK/unique/check per design,Migration pending
+INV,warehouses,id; owner_type; seller_id; name; status,PK id unless composite,FK/unique/check per design,Migration pending
+INV,stock_items,id; warehouse_id; offer_id; on_hand_qty; reserved_qty; blocked_qty; version,PK id unless composite,FK/unique/check per design,Migration pending
+INV,stock_reservations,id; stock_item_id; order_item_id; quantity; status; expires_at; idempotency_key,PK id unless composite,FK/unique/check per design,Migration pending
+INV,stock_movements,id; stock_item_id; movement_type; quantity; reference_type; reference_id; created_by; created_at,PK id unless composite,FK/unique/check per design,Migration pending
+INV,stock_adjustments,id; warehouse_id; status; reason; approved_by,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,carts,id; user_id; session_id; status,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,cart_items,id; cart_id; offer_id; quantity,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,checkout_sessions,id; user_id; status; quote_version; expires_at,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,orders,id; order_number; customer_id; status; subtotal_minor; discount_minor; delivery_minor; total_minor; currency,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,sub_orders,id; order_id; seller_id; fulfillment_mode; status,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,order_items,id; sub_order_id; offer_id; variant_id; quantity; unit_price_minor; discount_minor; tax_snapshot; product_snapshot,PK id unless composite,FK/unique/check per design,Migration pending
+ORD,order_status_history,id; order_id; old_status; new_status; actor_id; reason; created_at,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,commission_policies,id; seller_id; category_id; rate_bps; effective_from; effective_to,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,commission_calculations,id; order_item_id; policy_id; eligible_amount_minor; commission_minor,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,ledger_accounts,id; account_code; owner_type; owner_id; currency; account_type,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,ledger_transactions,id; reference_type; reference_id; status; idempotency_key; posted_at,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,ledger_entries,id; transaction_id; account_id; direction; amount_minor,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,settlements,id; seller_id; period_start; period_end; total_minor; status,PK id unless composite,FK/unique/check per design,Migration pending
+FIN,payouts,id; seller_id; settlement_id; amount_minor; status; bank_reference,PK id unless composite,FK/unique/check per design,Migration pending
+LOG,delivery_zones,id; seller_id; region_id; district_id; rules_json; status,PK id unless composite,FK/unique/check per design,Migration pending
+LOG,delivery_tariffs,id; seller_id; zone_id; base_price_minor; rules_json,PK id unless composite,FK/unique/check per design,Migration pending
+LOG,shipments,id; sub_order_id; tracking_code; carrier_type; carrier_id; status; estimated_delivery_at; delivered_at,PK id unless composite,FK/unique/check per design,Migration pending
+LOG,shipment_items,shipment_id; order_item_id; quantity,PK id unless composite,FK/unique/check per design,Migration pending
+LOG,shipment_events,id; shipment_id; status; source; external_event_id; occurred_at,PK id unless composite,FK/unique/check per design,Migration pending
+LOG,delivery_proofs,id; shipment_id; proof_type; object_key; verified_at,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,admin_roles,id; code; description,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,admin_permissions,id; resource; action,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,admin_role_permissions,role_id; permission_id,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,admin_members,id; user_id; role_id; status,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,moderation_cases,id; entity_type; entity_id; status; assignee_id; reason,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,moderation_decisions,id; case_id; reviewer_id; decision; comments; decided_at,PK id unless composite,FK/unique/check per design,Migration pending
+ADM,audit_logs,id; actor_id; actor_type; action; entity_type; entity_id; before_json; after_json; request_id; ip_hash; occurred_at,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,return_requests,id; order_id; customer_id; reason; status,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,return_items,id; return_id; order_item_id; quantity,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,return_evidence,id; return_id; object_key; type,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,refunds,id; payment_transaction_id; return_id; amount_minor; status,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,refund_attempts,id; refund_id; provider; external_ref; status; error_code,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,support_tickets,id; requester_id; seller_id; order_id; category; priority; status; assigned_to,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,ticket_messages,id; ticket_id; sender_id; body; visibility,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,ticket_attachments,id; message_id; object_key,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,ticket_sla_events,id; ticket_id; event_type; occurred_at,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,seo_metadata,id; entity_type; entity_id; locale; title; description; canonical_path,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,seo_redirects,id; source_path; target_path; status_code,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,cms_pages,id; slug; locale; status; content_json,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,cms_banners,id; placement; media_key; link; active_from; active_to,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,notification_templates,id; event_type; channel; locale; body,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,notification_preferences,user_id; channel; category; enabled,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,notifications,id; user_id; event_id; channel; status; payload,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,notification_attempts,id; notification_id; provider; status; error_code; attempted_at,PK id unless composite,FK/unique/check per design,Migration pending
+OPS,device_tokens,id; user_id; platform; token_hash; encrypted_token,PK id unless composite,FK/unique/check per design,Migration pending
+MOB,mobile_app_versions,id; platform; min_supported_version; latest_version; force_update,PK id unless composite,FK/unique/check per design,Migration pending
+MOB,mobile_sessions,id; user_id; device_id; refresh_token_hash,PK id unless composite,FK/unique/check per design,Migration pending
+MOB,mobile_deep_link_events,id; user_id; link_type; entity_id; opened_at,PK id unless composite,FK/unique/check per design,Migration pending
+PAY,payment_intents,id; order_id; provider; amount_minor; currency; status; expires_at; idempotency_key,PK id unless composite,FK/unique/check per design,Migration pending
+PAY,payment_transactions,id; intent_id; provider_transaction_id; type; amount_minor; status; confirmed_at,PK id unless composite,FK/unique/check per design,Migration pending
+PAY,payment_webhook_receipts,id; provider; external_event_id; payload_hash; received_at; processing_status,PK id unless composite,FK/unique/check per design,Migration pending
+PAY,payment_provider_configs,id; provider; environment; merchant_reference; secret_reference; enabled,PK id unless composite,FK/unique/check per design,Migration pending
+PAY,payment_reconciliation_items,id; provider; external_transaction_id; internal_transaction_id; match_status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,fulfillment_centers,id; name; address_id; status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,warehouse_locations,id; center_id; parent_id; location_code; location_type; capacity,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,inbound_shipments,id; seller_id; center_id; status; expected_at; received_at,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,inbound_items,id; inbound_id; variant_id; expected_qty; received_qty; accepted_qty,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,inventory_lots,id; variant_id; seller_id; batch_code; expiry_date; status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,inventory_units,id; lot_id; serial_number; status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,warehouse_stock,id; center_id; location_id; seller_id; variant_id; lot_id; on_hand_qty; reserved_qty; blocked_qty,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,warehouse_tasks,id; center_id; task_type; reference_id; assigned_to; status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,pick_lists,id; sub_order_id; center_id; status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,pick_list_items,id; pick_list_id; order_item_id; location_id; requested_qty; picked_qty,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,packing_sessions,id; shipment_id; operator_id; status,PK id unless composite,FK/unique/check per design,Migration pending
+FUL,parcels,id; shipment_id; weight_grams; length_mm; width_mm; height_mm; tracking_code,PK id unless composite,FK/unique/check per design,Migration pending

@@ -1,0 +1,11 @@
+Integration,Purpose,Validation
+Click,"Charge, confirm, refund",Confirm contract/callback signature
+Payme,Payment transactions,Verify Merchant API schema
+SMS,OTP and notifications,Delivery status
+OFD,Fiscal receipts,Validate regulation
+E-IMZO,Optional contract signing,Legal workflow
+MXIK,Tax classifier,Version updates
+Maps,Address and geocoding,Terms and tariffs
+Couriers,Delivery,Webhook and proof
+ERP,Seller inventory sync,Credential handling
+Firebase,Push,Device consent

@@ -1,0 +1,224 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PNPM_VERSION: '9.4.0'
+  NODE_VERSION: '24'
+
+jobs:
+  node:
+    name: lint / typecheck / test / build (pnpm + turbo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm db:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # DB-free unit tests only — e2e (apps/api/test/*.e2e-spec.ts) needs a real
+      # Postgres/Redis and runs in the separate `e2e` job below, which provisions
+      # those as GitHub Actions service containers.
+      - name: Test (unit, no DB)
+        run: pnpm test:unit
+
+      - name: Build
+        run: pnpm build
+
+  e2e:
+    name: e2e (apps/api, postgres + redis service containers)
+    runs-on: ubuntu-latest
+    services:
+      # Image tags match docker-compose.dev.yml's postgres/redis services for
+      # dev/CI parity. Service containers are reachable at localhost:<port> in
+      # this job (unlike docker-compose's service-name DNS), hence DATABASE_URL/
+      # REDIS_URL below point at localhost, not at a "postgres"/"redis" hostname.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: longrich
+          POSTGRES_PASSWORD: longrich
+          POSTGRES_DB: longrich
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U longrich -d longrich"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://longrich:longrich@localhost:5432/longrich?schema=public
+      REDIS_URL: redis://localhost:6379
+      # Throwaway CI-only secrets (not production values) — required by
+      # apps/api/src/modules/identity/config/auth.config.ts's fail-fast startup
+      # check (G0 QA review blocker #2). Generated once with crypto.randomBytes(32).
+      JWT_SECRET: 457755222e7356a0c999b7ef2644cef5bb2dda92bb47fbdc0217418c7daf5ae2
+      OTP_HMAC_SECRET: cdcd15fe89bd738a6ef3e10e1fc2500ff2e8b4927352792010fb9c251e521e9e
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm db:generate
+
+      - name: Apply migrations to the CI postgres service
+        run: pnpm db:migrate:deploy
+
+      # rbac.e2e-spec.ts logs in as the seeded SUPER_ADMIN/SUPPORT_AGENT admin
+      # users (prisma/seed.ts) to assert real allow/deny RBAC behavior.
+      - name: Seed fixtures
+        run: pnpm db:seed
+
+      - name: Run e2e tests
+        run: pnpm test:e2e
+
+  secret-scan:
+    name: secret / PII leakage grep check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grep for obvious committed secrets
+        run: |
+          set -euo pipefail
+          # Excludes this workflow file itself — it is the one place the
+          # pattern text below is expected to appear literally.
+          PATTERN='(BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY|AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]+|BEGIN OPENSSH PRIVATE KEY)'
+          if git grep -I -n -E "$PATTERN" -- . ':!*.lock' ':!pnpm-lock.yaml' ':!.github/workflows/ci.yml' ; then
+            echo "Potential secret pattern found in tracked files." >&2
+            exit 1
+          fi
+          echo "No obvious secret patterns found."
+
+      - name: Fail if .env is tracked
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '^\.env$|/\.env$'; then
+            echo ".env must never be committed." >&2
+            exit 1
+          fi
+          echo "No tracked .env file."
+
+  log-redaction-check:
+    name: audit/log redaction leakage grep check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm db:generate
+
+      # Distinct concern from the "secret / PII leakage grep check" job above
+      # (which scans tracked SOURCE files for committed secrets). This job
+      # scans captured RUNTIME OUTPUT of the unit test suite — the same
+      # suite that exercises AuditService's redaction (audit.service.spec.ts)
+      # and the structured request/error logger (http-exception.filter.spec.ts,
+      # request-id.middleware) — for the known dev secret values and
+      # card/OTP-shaped literals TZ §19 says must never reach a log line or
+      # trace attribute. Scoped to the unit suite (no live Postgres/Redis in
+      # this job) rather than the full e2e suite.
+      - name: Run unit tests, capturing stdout/stderr
+        working-directory: apps/api
+        run: pnpm test:unit 2>&1 | tee /tmp/unit-test-output.log
+
+      - name: Grep captured test output for secret/OTP/card leakage
+        run: |
+          set -euo pipefail
+          PATTERN='dev-only-insecure-otp-hmac-secret|dev-only-insecure-jwt-secret|"password":"[^"R]|"otp_code":"[0-9]{6}"|"card_number":"[0-9]{12,19}"'
+          if grep -I -n -E "$PATTERN" /tmp/unit-test-output.log; then
+            echo "Potential secret/OTP/card value found in test run output." >&2
+            exit 1
+          fi
+          echo "No secret/OTP/card leakage found in captured test output."
+
+  flutter:
+    name: flutter analyze / test (apps/mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check apps/mobile state
+        id: mobile
+        run: |
+          if [ -f apps/mobile/pubspec.yaml ]; then
+            echo "scaffolded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "scaffolded=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: subosito/flutter-action@v2
+        if: steps.mobile.outputs.scaffolded == 'true'
+        with:
+          channel: stable
+
+      - name: flutter pub get
+        if: steps.mobile.outputs.scaffolded == 'true'
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: flutter analyze
+        if: steps.mobile.outputs.scaffolded == 'true'
+        working-directory: apps/mobile
+        run: flutter analyze
+
+      - name: flutter test
+        if: steps.mobile.outputs.scaffolded == 'true'
+        working-directory: apps/mobile
+        run: flutter test
+
+      - name: No-op (apps/mobile not scaffolded yet — G8 scope)
+        if: steps.mobile.outputs.scaffolded == 'false'
+        run: echo "apps/mobile has no pubspec.yaml yet (G8 scope per docs/traceability.md) — passing trivially."

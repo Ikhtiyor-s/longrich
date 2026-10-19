@@ -1,0 +1,188 @@
+name: longrich-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-longrich}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-longrich}
+      POSTGRES_DB: ${POSTGRES_DB:-longrich}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Official minio/minio images now require a Docker Hub login to pull (MinIO's
+  # 2025 licensing change gated the AGPLv3 community images) — see README.md
+  # "Local dev environment" for the substitution note. bitnamilegacy/minio is
+  # the same upstream MinIO server, just repackaged, and is still pullable
+  # anonymously. MINIO_DEFAULT_BUCKETS makes the client/mc bootstrap container
+  # the ticket flagged as "if needed" unnecessary — the server creates the
+  # bucket itself on boot.
+  minio:
+    image: bitnamilegacy/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-longrich}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-longrich_minio_dev}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET:-longrich-dev}
+    ports:
+      - '${MINIO_API_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # TZ §03/§20 "when resource permitting" / "may be toggled" — not started by a
+  # plain `docker compose -f docker-compose.dev.yml up`. Start explicitly with
+  # `--profile search up opensearch`. No G0 endpoint needs it.
+  opensearch:
+    image: opensearchproject/opensearch:2
+    restart: unless-stopped
+    profiles: ['search']
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - '${OPENSEARCH_PORT:-9200}:9200'
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:9200/_cluster/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # One-shot per docs/architecture/g0-design-notes.md §10. Safe to run today:
+  # prisma/migrations/ has zero files (T-G0-3 hasn't landed yet), so this is a
+  # verified no-op ("No pending migrations to apply.") — it does not create or
+  # alter any domain table. api/worker wait on it so the wiring is already
+  # correct the day T-G0-3's migration files land.
+  migration-runner:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    command: ['pnpm', 'db:migrate:deploy']
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-longrich}:${POSTGRES_PASSWORD:-longrich}@postgres:5432/${POSTGRES_DB:-longrich}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-longrich}:${POSTGRES_PASSWORD:-longrich}@postgres:5432/${POSTGRES_DB:-longrich}?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+      # No inline default here on purpose — apps/api/src/modules/identity/config/auth.config.ts
+      # (G0 QA review blocker #2) hard-fails startup outside NODE_ENV=development/test if these
+      # are unset, so a misconfigured deploy fails loudly instead of silently running on the
+      # source-committed dev fallback. Values flow from .env (copied from .env.example) same as
+      # every other var above; see .env.example's comments — these are throwaway dev secrets only.
+      JWT_SECRET: ${JWT_SECRET}
+      OTP_HMAC_SECRET: ${OTP_HMAC_SECRET}
+      # MinIO reached via the in-network service name, same
+      # localhost-vs-service-name split as DATABASE_URL/REDIS_URL above.
+      # Credentials/bucket reuse the minio service's own env vars (T-G1-3) —
+      # no separate access/secret key names invented.
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-longrich}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-longrich_minio_dev}
+      MINIO_BUCKET: ${MINIO_BUCKET:-longrich-dev}
+      STORAGE_SIGNED_URL_TTL_SECONDS: ${STORAGE_SIGNED_URL_TTL_SECONDS:-900}
+      SELLER_DOCUMENT_ALLOWED_MIME_TYPES: ${SELLER_DOCUMENT_ALLOWED_MIME_TYPES:-application/pdf,image/jpeg,image/png}
+      SELLER_DOCUMENT_MAX_SIZE_BYTES: ${SELLER_DOCUMENT_MAX_SIZE_BYTES:-10485760}
+    ports:
+      - '${API_PORT:-3000}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migration-runner:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/health',(r)=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-longrich}:${POSTGRES_PASSWORD:-longrich}@postgres:5432/${POSTGRES_DB:-longrich}?schema=public
+      REDIS_URL: redis://redis:6379
+      # See the "api" service's JWT_SECRET/OTP_HMAC_SECRET comment above — same reasoning.
+      JWT_SECRET: ${JWT_SECRET}
+      OTP_HMAC_SECRET: ${OTP_HMAC_SECRET}
+      # Same in-network MinIO config as the "api" service above — missing here
+      # until T-G2-8's CatalogImportWorker became the first worker-side code to
+      # actually read object content back (StorageService.getObjectBuffer), at
+      # which point the missing vars silently fell back to
+      # storage.config.ts's http://localhost:9000 default, which does not
+      # resolve to anything inside the worker container (ECONNREFUSED).
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-longrich}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-longrich_minio_dev}
+      MINIO_BUCKET: ${MINIO_BUCKET:-longrich-dev}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migration-runner:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  opensearch_data:

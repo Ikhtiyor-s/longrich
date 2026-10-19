@@ -1,0 +1,9 @@
+Risk,Requirement,Severity
+Payment settlement,PSP split/escrow/payout legal and commercial contract must be confirmed,BLOCKER
+Tax/fiscal,OFD/cheques and tax requirements need validation,BLOCKER
+Seller onboarding,Legal status and KYB fields may change,HIGH
+Regulated categories,Certification and prohibited items policies per category,HIGH
+Marketplace brand,Trademark and longrich.uzbekistan.uz subdomain rights,HIGH
+Fulfillment,Physical inventory ownership and loss liability,HIGH
+Delivery,Operational SLA and geography,MEDIUM
+NFR targets,Validate against actual infrastructure and realistic load,MEDIUM

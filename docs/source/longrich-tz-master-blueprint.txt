@@ -1,0 +1,233 @@
+﻿LONGRICH MARKETPLACE — MASTER BLUEPRINT v1.0
+Sana: 17.10.2026. Status: IMPLEMENTATION BASELINE / DRAFT, yakuniy biznes-huquqiy qarorlar tasdiqlanishi kerak.
+Maqsad: universal O‘zbekiston multi-vendor marketplace: Buyer Web + Android/iOS + Seller Portal + Admin + WMS + to‘lov + moliya + logistika. Ushbu hujjat coding-agentga spetsifikatsiya sifatida berilishi uchun tashkil qilingan, ammo avtomatik qurilgan kod albatta inson tomonidan ko‘rib chiqiladi va testdan o‘tadi.
+
+
+01. MAQSAD VA QAMROV
+3P ko‘p sotuvchili universal marketplace; bitta global katalog kartasiga bir nechta seller offer. Xaridor bitta savatchada bir nechta sotuvchidan xarid qiladi; master order → seller sub-orders → shipments. Marketplace operatorining o‘z fulfillment omborlari ham bor. O‘z mahsulotini sotish (1P), pickup point, reklama, BNPL va seller subscription keyingi bosqichlar uchun extension point; MVP asosiy qamroviga avtomatik kiritilmasin.
+MVP majburiy: Buyer Web, Seller Onboarding, Global Catalog/Offers, Inventory/Reservations, Cart/Checkout/Orders, Finance/Ledger, Seller Delivery/Tracking, Admin/Moderation/Audit, Refund/Support/SEO/Notifications, Flutter Android/iOS, Click/Payme, Fulfillment WMS.
+Til uz/ru, en extension; UZS va O‘zbekiston hududlari; narxlarni ekranlarda so‘mda ko‘rsatish. Nomi “Longrich”dan foydalanish uchun tovar belgisi huquqi alohida tasdiqlanishi kerak; longrich.uzbekistan.uz faqat subdomen boshqaruvi ruxsati bo‘lsa ishlatiladi.
+
+
+02. PERSONALAR, ROLLAR VA RUXSAT
+Guest: browse, search, guest cart. Customer: addresses, checkout, orders, returns, reviews. Seller Owner: organization, members, catalog, finance. Seller Manager: products, order and inventory. Seller Operator: pick/dispatch limited. Warehouse Manager/Receiving/QC/Picker/Packer/Dispatcher/Inventory Auditor: WMS role-bound work. Courier: assigned shipments only. Support Agent: tickets and scoped order context. Moderator: seller/catalog approvals. Finance Manager: ledger, reconciliation, payouts under maker-checker. Super Admin: global policy operations, but no plaintext secrets; System Auditor: immutable audit read-only.
+Auth: SMS OTP, normalized phone, hashed OTP, TTL, per-phone/device/IP rate limits, session rotation, refresh revoke, admin MFA. RBAC + resource ownership + seller_id isolation; never rely on UI hiding for authorization. Admin impersonation if ever needed must be time-bound, opt-in, auditable and prohibited for finance.
+
+
+03. SYSTEM ARCHITECTURE / ADR-001
+Chosen: modular monolith (NestJS TypeScript) + transactional outbox + worker jobs. Next.js/TypeScript: buyer, seller, admin, warehouse web; Flutter: buyer Android/iOS. PostgreSQL primary transactional store; Prisma migrations; Redis caching/locks/BullMQ; OpenSearch for search; S3/MinIO object storage; reverse proxy HTTPS; OpenTelemetry + Prometheus/Grafana/Loki; GitHub Actions CI. Docker Compose for development; production isolated services, backups and restore validation. Migrate to microservices only with measured need.
+Module boundaries: identity, sellers, catalog, offers, pricing, inventory, cart, checkout, orders, payments, finance, logistics, fulfillment, returns, support, seo-cms, notifications, admin-audit. Cross-module writes via application interfaces and domain services. Outbox event names versioned (payment.succeeded.v1, inventory.reserved.v1, order.created.v1, shipment.delivered.v1, refund.completed.v1). Consumers idempotent with inbox/dedup table.
+Single source of truth for each entity. Search index and inventory availability are derived projections. All external integration credentials use secret references rather than plaintext fields. No distributed ACID assumption; use compensating workflows and reconciliation.
+
+
+04. CROSS-CUTTING STANDARDS
+UUID identifiers; timestamps UTC; UI localizes timezone. Monetary values BIGINT minor units (UZS: 1 so‘m = 100 tiyin), rates basis points, rounding explicitly specified at item level; quantity NUMERIC with supported unit precision. Validate DB NOT NULL, unique, CHECK and foreign keys. Use immutable snapshots for order item price/title/tax/discount. Search cursor pagination; list filters/sorts whitelisted. JSON envelope {data,meta:{request_id}}; error {error:{code,message,details},request_id}; callbacks MUST use provider-native format. State transitions explicit and protected by optimistic concurrency or transaction locks. POST write operations requiring dedupe take Idempotency-Key.
+Codes: 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict, 422 invalid business rule, 429 throttled, 503 unavailable. Sensitive files signed URLs; malware scan; PII masking; retention periods defined separately. Definition of Done: API+DB migrations+RBAC+unit/integration/E2E+OpenAPI+docs+audit+observability, no P0/P1 open blockers.
+
+
+05. MODUL M01 — BUYER WEB
+Functional requirements: WEB-001 signup/login by OTP, WEB-002 home CMS banner, WEB-003 category tree, WEB-004 search/filter/sort, WEB-005 product variant/offer comparison, WEB-006 saved cart and wishlist, WEB-007 geo/delivery address, WEB-008 checkout, WEB-009 order timeline, WEB-010 return tickets, WEB-011 mobile-first accessibility, WEB-012 SEO pages.
+Screens: Home; Category; Search Results; Product Detail; Seller Offer Selector; Cart; Checkout Address/Delivery/Payment; Payment Pending/Result; My Orders; Order Detail; Returns; Profile; Addresses; Favorites; Support. Each has empty/loading/error/offline states, uz/ru translations, keyboard/screen-reader navigation.
+Rules: unauthenticated browse allowed; login required to purchase; inactive offers hidden; display prices are estimates until checkout quote; inventory delivery zone validated server-side. Responsive at 360/375/768/1024/1440 px; avoid horizontal overflow.
+DB: users(id,phone,status,verified_at), customer_profiles(user_id,name), customer_addresses(user_id,region,district,address_line,lat,lng,is_default), wishlists(user_id), wishlist_items(wishlist_id,product_id unique), recent_views(user_id,product_id,viewed_at).
+API: POST /v1/auth/otp/request, /verify; GET/PATCH /v1/me; GET/POST /v1/me/addresses; GET /v1/catalog/categories, /products, /products/{id}, /v1/search.
+Acceptance: correct OTP logs in; wrong/rate-limited OTP refused; only active offers appear; price revalidated before payment; guest cart merges by policy; mobile layout not clipped; unauthorized profile request returns 401.
+
+
+06. MODUL M02 — SELLER ONBOARDING & PORTAL
+Requirements: SEL-001 application legal entity, SEL-002 KYB document upload, SEL-003 bank info verification, SEL-004 contract acceptance/e-sign integration where applicable, SEL-005 shop profile, SEL-006 staff & RBAC, SEL-007 offers/stock/orders, SEL-008 finance statement, SEL-009 support and analytics.
+States DRAFT→SUBMITTED→UNDER_REVIEW→APPROVED→ACTIVE; NEEDS_CHANGES/REJECTED; ACTIVE↔SUSPENDED (reinstatement controlled). Rejected seller shown reasons; seller cannot publish while non-ACTIVE; existing orders handled by cancellation/fulfillment policy. Never let seller modify another seller's data.
+DB sellers(id,legal_name,tax_id,legal_type,display_name,status), seller_applications(id,seller_id,status,reviewer,reason), seller_documents(id,seller_id,type,object_key,verification_status), seller_members(id,seller_id,user_id,role), seller_bank_accounts(id,seller_id,encrypted_reference,verified), seller_contracts(id,seller_id,version,signed_key,accepted_at).
+API POST /v1/seller-applications; POST /{id}/submit; GET/PATCH /v1/seller/profile; GET/POST /v1/seller/members; POST /v1/seller/documents; GET /v1/seller/dashboard.
+Acceptance: incomplete KYB cannot submit; approval tracked; 403 cross-seller; owner cannot grant higher permissions; sensitive bank changes trigger review.
+
+
+07. MODUL M03 — GLOBAL CATALOG & OFFERS
+Requirements: CAT-001 nested taxonomy, CAT-002 mandatory category attributes, CAT-003 global product, CAT-004 variants, CAT-005 GTIN/EAN/UPC/barcodes, CAT-006 MXIK/IKPU tax classification reference, CAT-007 brand, CAT-008 seller offers/price history, CAT-009 images/video, CAT-010 duplicates review/merge, CAT-011 CSV import, CAT-012 moderation.
+Rules: Product=common canonical description; Variant=identifiable saleable configuration; Offer=seller+variant+price+fulfillment. Multiple offers for same variant, product image/attributes globally moderated. GTIN conflict creates review case, not destructive merge. Price history append-only. Seller offer can be suspended. Restricted categories demand additional certification rules.
+DB categories(id,parent_id,slug,status); category_attributes(id,category_id,key,type,required,validation); products(id,category_id,brand_id,title,description,status,canonical_id); product_variants(id,product_id,options,status); product_identifiers(id,variant_id,type,value); product_attribute_values(variant_id,attribute_id,value_json); seller_offers(id,seller_id,variant_id,sku,price_minor,currency,fulfillment_mode,status); offer_price_history(id,offer_id,old,new,changed_at); product_media(id,product_id,object_key,position).
+API GET /v1/catalog/products/{id}, /v1/catalog/variants/{id}/offers; POST/PATCH /v1/seller/offers; POST /v1/seller/catalog/imports; POST /v1/admin/catalog/merge-proposals/{id}/approve.
+Acceptance: adding seller offer doesn't clone global product; required attrs block publication; merging preserves historical orders; price changes generate audit; forbidden seller edit returns 403.
+
+
+08. MODUL M04 — INVENTORY / RESERVATIONS
+Requirements: INV-001 multiple seller/fulfillment warehouses; INV-002 physical on_hand, reserved, blocked, available; INV-003 atomic reserve; INV-004 TTL expiry; INV-005 reservation commit/release; INV-006 stock ledger movements; INV-007 adjustments approvals; INV-008 reconciliation and low-stock alerts.
+Invariant available=on_hand-reserved-blocked >=0. Use row-level lock or guarded UPDATE. Reservation TTL initial config 15 min. Late successful payment after reservation expiry cannot blindly confirm—recover stock or initiate refund/manual action. Commit and release idempotent. Fulfillment stock is owned in WMS ledger and projected into commerce availability.
+DB warehouses(id,owner_type,seller_id,status), stock_items(id,warehouse_id,offer_id,on_hand_qty,reserved_qty,blocked_qty,version; CHECK >=0), stock_reservations(id,stock_item_id,order_item_id,quantity,status,expires_at,idempotency_key), stock_movements(id,item_id,type,qty,reference_id,actor_id), stock_adjustments(id,warehouse_id,reason,approval_status).
+API GET/POST /v1/seller/warehouses, GET /v1/seller/inventory; POST /v1/seller/inventory/adjustments; POST /v1/internal/inventory/reservations, /{id}/commit, /{id}/release (internal-only).
+Acceptance: concurrent last unit only one success; expiration releases once; no negative quantities; mismatch adjusted with evidence; cross-seller inventory access denied.
+
+
+09. MODUL M05 — CART / CHECKOUT / ORDERS
+Requirements: ORD-001 multi-seller persistent cart; ORD-002 cart merge; ORD-003 quote version + expiry; ORD-004 price/tax/shipping/promo recalculation; ORD-005 reservations; ORD-006 single MasterOrder with SubOrders per seller/fulfillment group; ORD-007 payment intent; ORD-008 order state histories; ORD-009 partial cancel/return; ORD-010 tracking.
+Flow: cart→quote→stock reserve→master/sub-orders+snapshots→payment intent→authenticated payment success→commit reserved stock→seller/WMS fulfilment. Compensation: on payment failure release reserve and cancel order; on late success if no stock, manual recovery/refund. Master status derived from sub-order statuses rather than forced matching.
+DB carts(id,user_id,session_id,status), cart_items(cart_id,offer_id,qty), checkout_sessions(id,user_id,quote_version,expires_at), orders(id,order_number,customer_id,total_minor,status), sub_orders(id,order_id,seller_id,fulfillment_mode,status), order_items(id,sub_order_id,offer_id,variant_id,qty,unit_price_minor,tax_snapshot,product_snapshot), order_status_history(id,order_id,from,to,actor,reason).
+API GET/POST/PATCH/DELETE /v1/cart/items; POST /v1/checkout/quote and /confirm; GET /v1/orders/{id}; POST /v1/orders/{id}/cancel; GET /v1/seller/orders; POST /v1/seller/orders/{id}/accept.
+Acceptance: 3 sellers create appropriate suborders; same idempotency key creates one order; price version mismatch asks confirmation; partial cancellation isolated; unauthorized order access denied.
+
+
+10. MODUL M06 — COMMISSION / LEDGER
+Requirements: FIN-001 commission policy per category/seller version; FIN-002 per-item commission snapshots; FIN-003 balanced double-entry ledger; FIN-004 seller payable pending/available/held; FIN-005 statement; FIN-006 settlement and payout approvals; FIN-007 refund reversal; FIN-008 reconciliation and export.
+Commission = eligible_amount_minor * rate_bps / 10000 with fixed rounding; split discount funding and shipping fees explicit. Sum(debits)=sum(credits) for each posted transaction, same currency. Ledger immutable; corrections only reversal/compensating entry. Payout marked completed only on reliable bank/provider confirmation, seller balance not a bank escrow account. Marketplace settlement legal model must be agreed with bank/PSP.
+DB commission_policies(id,seller_id,category_id,rate_bps,effective_from/to), commission_calculations(id,order_item_id,policy_id,eligible_minor,commission_minor), ledger_accounts(id,owner_type,owner_id,currency,code), ledger_transactions(id,reference,idempotency,status), ledger_entries(id,transaction_id,account_id,direction,amount_minor), settlements(id,seller_id,period,total,status), payouts(id,settlement_id,bank_reference,status).
+API GET /v1/seller/finance/summary, /transactions, /statements, /payouts; GET /v1/admin/finance/ledger; POST /v1/admin/finance/settlements/{id}/approve, /reconciliation/run.
+Acceptance: 10% of 1,000,000 UZS=100,000 UZS commission; debit=credit; duplicate payment no duplicate ledger; rule edits don't mutate historical orders; refund posts balanced reversal.
+
+
+11. MODUL M07 — DELIVERY / SHIPMENTS
+Requirements: LOG-001 seller delivery zones/fees; LOG-002 quote; LOG-003 shipment and parcel; LOG-004 dispatch assignment; LOG-005 tracking events; LOG-006 proof of delivery; LOG-007 failed attempt/reschedule; LOG-008 reverse logistics.
+Rules: checkout only offers eligible delivery methods; quote captured in order; shipment contains item quantities and may partially fulfill suborder; tracking code unique; delivery proof OTP/QR/photo policy, privacy controlled; only authorized seller/courier can transition. Track provider event id for deduplication.
+DB delivery_zones(id,seller_id,region_id,district_id,rules_json), delivery_tariffs(id,zone_id,base_minor,rules), shipments(id,sub_order_id,carrier_type,status,tracking_code,eta), shipment_items(shipment_id,order_item_id,qty), shipment_events(id,shipment_id,status,source,external_event_id,occurred_at), delivery_proofs(id,shipment_id,type,object_key,verified_at).
+API POST /v1/delivery/quotes; GET/POST /v1/seller/delivery/zones; POST /v1/seller/shipments/{id}/dispatch; GET /v1/shipments/{id}/tracking; POST /v1/internal/shipments/{id}/events.
+Acceptance: out-of-zone disabled; duplicate courier webhook creates one event; no DELIVERY status without proof; buyer only sees own shipments.
+
+
+12. MODUL M08 — SUPER ADMIN / MODERATION / AUDIT
+Requirements: ADM-001 GMV/commission/order seller dashboard; ADM-002 seller KYB review; ADM-003 product/offer review; ADM-004 suspend/reinstate; ADM-005 order oversight; ADM-006 financial report and approvals; ADM-007 WMS monitoring; ADM-008 RBAC; ADM-009 immutable audit; ADM-010 feature flags.
+Rules: high-value refunds/payouts require maker-checker. Moderator cannot approve own high-risk change. Secrets and OTP never exposed in logs. Review outcomes APPROVED/REJECTED/NEEDS_CHANGES with reason; no silent deletion of critical records.
+DB admin_roles, admin_permissions, admin_role_permissions, admin_members, moderation_cases(id,entity_type,entity_id,status,assignee_id), moderation_decisions(case_id,reviewer_id,decision,reason), audit_logs(id,actor,action,entity,before_json,after_json,request_id,occurred_at).
+API GET /v1/admin/dashboard, /sellers, /orders, /moderation/cases, /audit-logs; POST /v1/admin/sellers/{id}/suspend; POST /v1/admin/moderation/cases/{id}/decision.
+Acceptance: 403 outside role; seller receives rejection reason; financial approval audited; audit entries append-only; no admin endpoint leak of secrets.
+
+
+13. MODUL M09 — RETURNS / SUPPORT / SEO / NOTIFICATIONS
+Returns: item-level RMA: REQUESTED→UNDER_REVIEW→APPROVED→AWAITING_RETURN→IN_TRANSIT→INSPECTED→REFUND_PENDING→REFUNDED→CLOSED; REJECTED/DISPUTED/partial paths. Never refund more than captured amount net prior refunds. Provider refund confirmed before final status. Tables return_requests,return_items,return_evidence,refunds,refund_attempts; APIs POST /v1/orders/{id}/returns, GET /v1/me/returns, POST /v1/admin/returns/{id}/decision.
+Support: ticket categories, P0/P1 SLA, seller-bound participants, internal notes, attachments, assigned agent and escalation. Tables support_tickets,ticket_messages,ticket_attachments,ticket_sla_events; APIs POST/GET /v1/support/tickets, POST /v1/support/tickets/{id}/messages, POST /v1/admin/support/tickets/{id}/assign.
+SEO/CMS: public SSR categories/products; semantic slugs; canonical, robots, XML sitemap, Product structured data aligned to current offer, locale hreflang, redirects, banner CMS. Tables seo_metadata,seo_redirects,cms_pages,cms_banners; APIs GET /sitemap.xml,/robots.txt,/v1/public/pages/{slug}; PATCH /v1/admin/seo/metadata/{id}. Faceted URL noindex strategy required.
+Notifications: SMS OTP, transactional order events, Firebase push, optional email/Telegram; per-locale templates, consent per channel for marketing, retries with dedup. Tables notification_templates,notification_preferences,notifications,notification_attempts,device_tokens. API GET /v1/me/notifications, PATCH /v1/me/notification-preferences, POST /v1/me/devices.
+Acceptance: repeat refund rejected/idempotent; hidden internal support comments never leak; sitemap excludes unpublished items; same event doesn't double-send SMS; provider outage retries with bounded backoff.
+
+
+14. MODUL M10 — FLUTTER ANDROID / iOS
+One Flutter buyer application codebase connected to identical back-end contracts. Screens: splash/version gate, onboarding/OTP, home, browse, search, product, seller offers, cart, checkout, payment redirect/return, orders, order details/tracking, return/support, profile/address/preferences. Use Flutter feature modules, typed API client and shared design tokens. Local cached browsing may work offline but checkout/payment never succeeds offline. Protected tokens via OS secure storage. Deep link routing and push token registration; Crash analytics without sensitive fields.
+DB additional: mobile_app_versions(platform,min_supported_version,latest_version,force_update), mobile_sessions(user_id,device_id,refresh_hash), device_tokens already in notifications. API GET /v1/mobile/config, /version; POST /v1/mobile/devices; shared commerce REST contracts.
+Acceptance: web order appears in mobile; Android and iOS payment result validated server-side; no false PAID from deep link; keyboard, scalable font, safe area and accessibility; forced-version upgrade functional; duplicate push registration harmless.
+
+
+15. MODUL M11 — CLICK / PAYME
+Payment adapter interface: createPayment(intent), verifyCallback(raw), getStatus(external_tx), refund(request if supported). Provider configuration sandbox/production, merchant reference and secret_reference. Payment statuses CREATED→PENDING→SUCCEEDED, FAILED/EXPIRED, PARTIALLY_REFUNDED/REFUNDED/DISPUTED. Provider callback signature/auth, amount/currency/order binding, replay dedupe, chronological transition, retry and provider-native response shape are mandatory.
+Payme Merchant API may use CheckPerformTransaction, CreateTransaction, PerformTransaction, CancelTransaction, CheckTransaction, GetStatement; Click integration version must follow partner-provided approved Prepare/Complete or chosen API protocol, without inventing secrets/signature. Actual refund and split-payment capability must be contract-confirmed; if unavailable, manual settlement workflow.
+DB payment_intents(id,order_id,provider,amount_minor,currency,status,idempotency_key), payment_transactions(id,intent_id,provider_transaction_id,type,status,amount_minor), payment_webhook_receipts(id,provider,external_event_id,payload_hash,processing_status), payment_provider_configs(id,environment,secret_reference), payment_reconciliation_items(id,provider,external_id,internal_id,match_status).
+API POST /v1/payments/intents; GET /v1/payments/intents/{id}/status; POST /v1/integrations/click/prepare, /complete, /v1/integrations/payme/merchant; GET /v1/admin/payments/transactions.
+Acceptance: duplicate callback cannot duplicate ledger/order; wrong auth/signature denied; amount mismatch flagged; provider timeout safely reconciled, never blind recharge; late callback recovery paths tested.
+
+
+16. MODUL M12 — OWN FULFILLMENT / WMS
+Operational flow: Seller inbound booking→dock receiving→count variance→QC/quarantine→putaway/bin→available seller-owned WMS stock→order reservation→pick wave/task→pack/label→handover→tracking; returns receiving and stocktake corrections. One center for initial pilot, many-center-ready design.
+Requirements: FUL-001 centers/warehouse locations aisle/rack/bin; FUL-002 incoming shipment; FUL-003 actual receiving; FUL-004 QC and quarantine; FUL-005 putaway; FUL-006 lot/expiry/serial where needed; FUL-007 atomic worker task claim; FUL-008 pick list and scan verification; FUL-009 packing parcel/weight; FUL-010 courier handover; FUL-011 return and reconciliation; FUL-012 cycle counts.
+Ownership: seller_id must persist across stock movements even when mixed racks contain same variant. FEFO when expiry matters. Block sale for QUARANTINED or expired. Inventory adjustment requires proof and approval. Do not double count WMS stock in seller warehouse stock.
+DB fulfillment_centers(id,address_id,status), warehouse_locations(id,center_id,parent_id,code,capacity), inbound_shipments(id,seller_id,center_id,status), inbound_items(id,inbound_id,variant_id,expected,received,accepted), inventory_lots(id,seller_id,variant_id,batch,expiry), inventory_units(id,lot_id,serial), warehouse_stock(id,center_id,location_id,seller_id,variant_id,lot_id,on_hand,reserved,blocked), warehouse_tasks(id,center_id,type,reference_id,assignee,status), pick_lists(id,sub_order_id,center_id,status), pick_list_items(id,pick_list_id,order_item_id,location_id,required,picked), packing_sessions(id,shipment_id,operator_id,status), parcels(id,shipment_id,weight,size,tracking_code).
+API POST /v1/seller/fulfillment/inbounds; GET /v1/warehouse/inbounds; POST /v1/warehouse/inbounds/{id}/receive, /{id}/qc; POST /v1/warehouse/tasks/{id}/claim, /complete; POST /v1/warehouse/pick-lists/{id}/confirm; POST /v1/warehouse/shipments/{id}/pack,/dispatch.
+Acceptance: expected 100/received 98 yields variance 2; quarantined not sellable; wrong bin scan blocks pick; multiple operators can't claim same task; seller ownership isolated and dispatch blocked until pack complete.
+
+
+17. KEY END-TO-END FLOWS
+FLOW-A SELLER: applicant→KYB docs→moderation→contract→ACTIVE→offer→moderate→stock→visible. Exceptions: NEEDS_CHANGES, expired docs, suspended.
+FLOW-B PURCHASE: browse→cart→quote→reserve→order/master/suborder→provider payment→verified success→ledger→seller/WMS fulfill→ship→proof→complete. Exceptions: quote expiry, stock race, payment timeout, late success, partial cancel.
+FLOW-C REFUND: customer return request→review→return shipment if required→QC→amount computed→provider refund/manual process→verified refund→compensating ledger→closure. Exceptions: partial return, provider fail, seller dispute.
+FLOW-D FULFILLMENT: inbound appointment→physical count→QC→putaway→stock availability→pick→pack→dispatch→deliver. Exceptions: shortage, damage, expiry, lost parcel.
+Critical implementation principle: all status transitions have guard conditions, actor permission, idempotency and explicit rejected transitions. Write BPMN 2.0 artifacts for four flows as a separate deliverable from this textual specification.
+
+
+18. DB DESIGN AND MIGRATIONS
+Tables listed under modules are initial entity inventory, NOT final executable SQL schema. Claude must produce full Prisma schema and migrations with explicit types, FK, unique constraints, nonnegative checks, stock invariants, indexed tenant scopes, retention, soft delete policies and migration-safe backfills. Use strict decimal/amount handling; no floating-point currency; no business state inferred from UI. Avoid generic JSON for core relational data except snapshots/rule configs where justified.
+Hot indexes: users(phone); seller_members(seller_id,user_id); products(category_id,status); product_identifiers(type,value); seller_offers(seller_id,variant_id); stock_items(warehouse_id,offer_id); stock_reservations(expires_at,status); orders(customer_id,created_at); sub_orders(seller_id,status); payment_transactions(provider,provider_transaction_id UNIQUE); ledger_entries(transaction_id); shipment_events(shipment_id,occurred_at); outbox_events(status,created_at).
+Migration strategy: forward-only numbered migrations, local seeded sample users/sellers/products, migration tests on fresh and existing PostgreSQL; backup before production; never destructive alter without ADR.
+
+
+19. API / SECURITY CONTRACT
+API root /v1. Public routes separate from seller and admin. JWT/session model with logout/revoke, authorization per object. OpenAPI generated from DTOs and contract-tested. Standard pagination/filter/order documented. Request headers: Authorization, Idempotency-Key for relevant POSTs, X-Request-ID optional (server generated). Error codes STALE_QUOTE, INSUFFICIENT_STOCK, FORBIDDEN_SELLER, INVALID_STATE_TRANSITION, PAYMENT_MISMATCH, DUPLICATE_REQUEST, UNSUPPORTED_REFUND, DELIVERY_ZONE_UNAVAILABLE.
+Webhooks: separate ingress, provider-native response, strict authentication/signatures, replay defense, raw payload validation, observed timestamps and dedup. Retry failed event processing via queue; poison messages to dead-letter queue and admin alert. Avoid exposing internal worker URLs publicly.
+AuthZ test matrix: Seller A cannot GET/PATCH Seller B offers/inventory/orders/payables; customer cannot access another customer's address/order; warehouse worker cannot change finance; support cannot access internal secret; moderator cannot approve payout. PII/token/card data redaction in audit and telemetry.
+
+
+20. DEVOPS, OPERATIONS, PERFORMANCE
+Environments dev, staging, production fully separated credentials and DB. Docker Compose for dev with PostgreSQL, Redis, MinIO, OpenSearch (when resource permitting), API, workers and UIs. Production HTTPS, health/readiness checks, rollback-aware deployment, log correlation, S3 versioning/retention, encrypted backup and tested restore. Secrets stored in dedicated manager or protected environment, not source control.
+SLO initial targets (to validate via testing): monthly availability 99.9%; catalog API p95 300ms, search p95 500ms, checkout p95 800ms excluding external provider; recoverability RPO≤15min and RTO≤4h. These are objectives, not measured production facts. Run k6 scenarios with browse:search:checkout realistic ratios and concurrency-last-stock tests. Monitor payment unmatched callbacks, queue retries, ledger imbalance, delayed shipments, seller KYB queue, WMS variances.
+
+
+21. UI/UX SCREEN INVENTORY
+Buyer Web/Mobile: onboarding, home, categories, search+filters, product, offers, favorites, cart, checkout (address/delivery/payment), payment waiting/result, orders, order detail, return request, support, profile/preferences, empty/error/offline states.
+Seller Web: login, seller application wizard, document center, approval status, business profile, staff roles, offers CRUD/import, stock/warehouses, orders, dispatch, statements, support, analytics.
+Admin Web: overview, seller KYB queues, seller detail, catalog moderation, product merge review, orders monitor, payments reconciliation, ledger/settlements, delivery/WMS monitoring, support, SEO CMS, feature flags, users/roles, audit.
+Warehouse Web: inbound appointment list, receiving barcode scan, QC, putaway, bin map, picking queue, packing station, dispatch manifest, stocktakes, returns intake.
+Each screen must have wireframe, controls, states, permission checks, API mapping and empty/loading/error/validation behavior before full UI build. Original design system; do not copy Uzum trademarks or UI 1:1.
+
+
+22. TEST PLAN AND RELEASE GATES
+Mandatory test layers: unit for financial arithmetic/rules; integration for DB transactional inventory and outbox; API contract DTO and status codes; Playwright E2E for web+admin; Flutter widget/integration/Appium device paths; security RBAC/IDOR/replay; k6 load and concurrent reservations; payment sandbox callbacks; WMS scanning and stocktake; recovery restore and chaos-like provider outages.
+Gated acceptance scenarios: two buyers race on last stock (one succeeds), duplicate payment callback (single payment+ledger), expired reservation+late success (no lost money/order), multi-seller partial cancel, partial refund balanced ledger, seller cross-tenant denial, inbound count discrepancy, quarantined stock unavailable, pick wrong bin rejection, shipment proof enforcement, OpenSearch eventual consistency not breaking checkout.
+Release blocked on unresolved P0/P1 security/data-integrity defects; API/DB tests green; backup restore proven; payment reconciliation verified; real provider contract approval, tax/fiscal and legal obligations reviewed; no mock data masquerading as real orders.
+
+
+23. ROADMAP & DEPENDENCIES
+Sprint 1–2 foundation: repo, auth, RBAC, CI, infra, schema, tracing. Sprint 3–4 sellers/catalog/offer/moderation. Sprint 5–6 inventory reservation and WMS receiving. Sprint 7–8 cart/checkout/orders and price snapshots. Sprint 9–10 Click/Payme payments, ledger and refunds. Sprint 11–12 seller delivery and WMS pick/pack. Sprint 13–14 buyer/seller/admin WUI complete. Sprint 15–16 Flutter app and push/deep links. Sprint 17–18 QA/security/load, pilot, deployment. Each sprint requires migration, OpenAPI, demo flows and test evidence. Schedule is indicative; external integrations may delay release.
+Pilot: start with limited seller count, categories and single fulfillment center; staged feature flags; rollback plan; capture operational learnings before nationwide rollout.
+
+
+24. EXTERNAL DECISIONS AND LEGAL DEPENDENCIES
+Not yet approved: who is merchant-of-record; whether PSP supports multi-seller settlements or split; payout hold/settlement trigger; exact commission base and discount funding; fiscalization and receipts; identity/legal onboarding required fields; prohibited or restricted categories; return statutory periods; data residency/privacy; courier contracts; warehouse insurance; product liability; brand rights for Longrich name; authorization to use longrich.uzbekistan.uz subdomain. These require contracts and appropriate Uzbekistan legal/tax review; do not assume availability from generic API documentation.
+Source leads for verification: https://developer.help.paycom.uz/ ; https://docs.payme.uz/ ; https://napp.uz/ . Obtain current signed Click API docs from partner before production implementation. No payment provider credentials should be placed in Claude prompts or Google Docs.
+
+
+25. CLAUDE IMPLEMENTATION RUNBOOK
+Read this entire document and extract REQUIREMENTS.md, open-questions.md, ADRs, architecture diagram, OpenAPI, Prisma schema draft, dependency graph, sprint/backlog with traceable IDs. Do not claim a feature implemented unless code, migration, tests and user-facing UI exist and pass. Check repository before touching anything; never overwrite existing code/data blindly. Work branch-by-branch: foundation → seller/catalog → inventory → orders → payments/ledger → delivery/WMS → frontends → mobile → hardening. Every milestone: update docs, tests, migration status and traceability matrix. No fake production integration: Click/Payme adapters must have sandbox/mock mode until verified credentials and signed docs available. External API secrets via environment secrets only.
+End of each work unit: report changed files, migrations, run commands, tests passed/failed, demos, known blockers, remaining TODOs and next dependency. Require explicit approval for destructive DB changes and production deployment. Perform permission checks on every new endpoint. Never bypass audit or idempotency to simplify flow. Original design only, no proprietary assets copied. Development agent must also use the repository as source of truth and clarify ambiguities rather than invent business facts.
+
+
+
+
+
+
+26. TO‘LIQ TZ: QO‘LLANISH TARTIBI
+Bu TZ 1–25 bo‘limlardagi master blueprintning implementatsion davomi. Har bir requirement: ID, rol, precondition, action, validation, permission, postcondition, error case, audit event, acceptance va test case bilan implement qilinishi shart. Kod yozishdan avval repository audit va gap analysis kerak. Dasturchi yoki Claude manbada belgilanmagan merchant-of-record, Click credentials, refund policy, qonuniy seller turi, komissiya stavkasi yoki domen huquqini o‘zi taxmin qilmasin. Dastlab docs/open-questions.md fayliga ajratsin. Har bir epic → user story → task → PR → test evidence izchil bog‘lansin.
+
+
+27. TO‘LIQ TZ: EKRANLAR VA UX
+Buyer Web va Flutter: Login/OTP; Home; Catalog categories; Search/facets; Product details+variants; seller offer comparison; wishlist; Cart; Checkout address, shipping, payment; payment pending/result; Orders list; Order detail and shipments; Return request; Support; User profile and saved addresses; notifications. Seller portal: registration wizard, KYB docs, review status, shop profile, product offer list/create/import, warehouses/inventory, orders/picking/dispatch, delivery tariffs, commission statement, staff roles, tickets, analytics. Super Admin: overview KPI, seller KYB queue, product moderation/merge, orders, transactions/refunds, ledger/settlements, support, SEO CMS, audit, integrations and WMS. Warehouse: inbound booking, scan receiving, QC, putaway, stock/bin map, pick, pack, dispatch, cycle count and returned goods.
+Every screen requires route, target role, controls with types and validation, API source, empty/loading/error/offline states, keyboard and screen reader, confirmation of destructive action, responsive rules at 360/375/768/1024/1440px. Buyer route map: /, /catalog/[slug], /search, /product/[slug], /cart, /checkout, /account, /orders, /orders/[id], /returns, /support. Do not pixel-copy Uzum brand or UI.
+
+
+28. TO‘LIQ TZ: FORMALAR VA FIELD VALIDATSIYA
+User phone normalized E.164 +998..., challenge OTP TTL configurable (proposal 120 sec) and anti-enumeration error; maximum OTP attempts and resend rate limited. Profile first/last name Unicode and length validation; locale uz/ru. Seller legal_type enum; tax_id and bank account as strings (leading zeros retained), legal_name max255, public store name max120, bank information encrypted/masked, docs signed upload with file MIME+size validation and malware scan. Seller can submit only required docs and contract acknowledgement; historical versions kept.
+Category attributes define per-category required, enum, numeric range, unit and localization. Product title 3..255, images JPEG/PNG/WebP with moderation, GTIN checksum validation, MXIK reference classification version, variant uniqueness, sanitized description; offer price_minor positive BIGINT (100 tiyin = 1 UZS), seller SKU unique per seller; quantity decimal precision based on unit; avoid JS floating point for payments. Addresses require structured region/district, line, geo lat/lng range, one default. Checkout server verifies seller active, offer active, quantity, stock, deliverability, price snapshot and quote version. No client-authored final totals.
+
+
+29. TO‘LIQ TZ: STATE TRANSITIONS
+Seller DRAFT→SUBMITTED→UNDER_REVIEW→APPROVED→ACTIVE; alternatives NEEDS_CHANGES/REJECTED/SUSPENDED. Product DRAFT→PENDING_REVIEW→PUBLISHED; alternatives CHANGES_REQUESTED/REJECTED/SUSPENDED/ARCHIVED. Offer DRAFT→PENDING_REVIEW→ACTIVE, may be INACTIVE/SUSPENDED. Inventory reservation ACTIVE→COMMITTED/RELEASED/EXPIRED terminal and idempotent. Checkout quote CREATED→CONFIRMED/EXPIRED/INVALIDATED. Order CREATED→AWAITING_PAYMENT→PAID→CONFIRMED→PICKING→PACKED→SHIPPED→DELIVERED→COMPLETED; canceled states only from allowed prior statuses. Payment CREATED→PENDING→SUCCEEDED or FAILED/EXPIRED; refunds separate state machine. RMA REQUESTED→UNDER_REVIEW→APPROVED→AWAITING_RETURN→IN_TRANSIT→INSPECTED→REFUND_PENDING→REFUNDED→CLOSED; alternatives REJECTED/DISPUTED.
+For each transition implement transition permission, guard, atomic data mutation, outbox event, audit, notification and compensating action. Invalid transitions return 409 INVALID_STATE_TRANSITION; silent rewrites prohibited.
+
+
+30. TO‘LIQ TZ: DATABASE PHYSICAL STANDARD
+Use UUID PK; timestamptz UTC; mutable entities updated_at and version; seller_id tenant index; explicit FK/delete strategy; unique constraints; money BIGINT minor unit; rates integer basis points; quantity NUMERIC(18,3) or appropriate precision. Normalize customer, seller, product, variant, offer, stock, order/suborder/item, payment, finance ledger, shipment, WMS bin/lot; JSON only for snapshots and versioned configurations. Index users(phone), seller_members(seller_id,user_id), products(category_id,status), product_identifiers(type,value), seller_offers(seller_id,variant_id), stock_items(warehouse_id,offer_id), reservations(status,expires_at), orders(customer_id,created_at), sub_orders(seller_id,status), payment_transactions(provider,provider_transaction_id) UNIQUE, outbox_events(published_at).
+Tables to add: platform.outbox_events(id,aggregate_type,aggregate_id,event_type,payload,occurred_at,published_at), commerce.idempotency_keys(scope,key,request_hash,response_payload,status,expires_at, PRIMARY KEY(scope,key)), platform.inbox_processed_events(consumer,event_id,processed_at UNIQUE). Atomic reservation guarded update ensures on_hand-reserved-blocked >= requested. Balanced ledger debit/credit within posted transaction, correction via reversal only. Migrations reversible by tested forward corrections, no destructive production changes without approval.
+
+
+31. TO‘LIQ TZ: API CONTRACT BEHAVIOR
+All /v1 REST calls use standardized JSON {data,meta:{request_id}} and error {error:{code,message,details},request_id}; provider webhooks strictly use provider-native contract. Lists cursor/limit<=100, filter/sort allowlist and explicit permissions. POST /v1/auth/otp/request body {phone,purpose} returns generic 202; POST /v1/auth/otp/verify body {challenge_id,code} returns session/tokens. POST /v1/seller-applications {legal_type,tax_id,legal_name,contacts}→201 DRAFT; /submit requires docs. POST /v1/seller/offers {variant_id,seller_sku,price_minor,currency,fulfillment_mode}→201. GET /v1/catalog/products/{id} includes variants and public offers. POST /v1/checkout/quote {cart_id,address_id,promo_code?} returns quote id/version/expiry, groups, shipping options, computed totals. POST /v1/checkout/confirm {checkout_session_id,quote_version,address_id,payment_provider,delivery_selection} and Idempotency-Key creates one master order, suborders and payment intent. GET /v1/orders/{id} returns own snapshots and shipments. POST /v1/orders/{id}/returns {items:[{order_item_id,quantity,reason}],evidence_keys} returns RMA. 409 stale quote requires reapproval; 422 out of stock includes available quantity. Swagger/OpenAPI full schema must be generated during implementation, and each endpoint has allow/deny contract tests.
+
+
+32. TO‘LIQ TZ: PAYMENT / LEDGER EXCEPTIONS
+Duplicate callback must produce one payment result and one ledger posting. Provider signature/auth, amount, merchant, currency, order and transaction ID must match. Browser redirect alone cannot confirm payment. Out-of-order callback and delayed reversal trigger status reconciliation instead of blind transitions. If payment succeeds after reservation expiry: safe reacquire if stock exists, otherwise hold fulfillment and manual/refund workflow; never oversell. On provider downtime pending payment and retry status check with backoff; do not issue second capture automatically.
+Ledger posted transaction balanced debit=credit, immutable; seller pending/available/held balance tracked, commission snapshot per order item. Partial return maximum refunded amount <= originally captured minus previous refunds; rounding allocation deterministic. Daily reconciliation compares provider vs internal transaction with MATCHED/PROVIDER_ONLY/INTERNAL_ONLY/AMOUNT_MISMATCH/STATUS_MISMATCH; auditable corrections. Payout requires approval, only CONFIRMED after actual bank acknowledgment. Contract must determine who collects payment and how sellers receive it.
+
+
+33. TO‘LIQ TZ: FULFILLMENT SOP
+Seller creates ASN inbound to chosen center with offer/variant/expected quantity, packing list and arrival appointment. Warehouse receiving scans and records actual quantity/variance with actor. QC records accepted, rejected, quarantine and evidence. Putaway locates stock using center→zone→aisle→rack→shelf→bin, barcode uniqueness by center, capacity rule. For regulated perishable goods FEFO by expiry; for serial goods serial uniqueness. Picking generates task claim (atomic), expected bin/SKU/lot/qty; wrong scan rejected; shortage handled by exception without faking stock. Packing records carton, weight, dimensions, manifest; dispatch only after pack complete and handover confirmation. Return inbound separately QC inspected before restocking. All stock remains attributed to seller owner even in shared bins. Daily cycle counts with discrepancy approval and stock ledger movement.
+Acceptance: expected 100 received 98 produces discrepancy 2; quarantined stock unsellable; one picker wins simultaneous claim; pick > reserved rejected; seller A stock not substituted for seller B order; expiry blocks shipment; missing delivery proof prevents DELIVERED.
+
+
+34. TO‘LIQ TZ: SECURITY AND RBAC MATRIX
+Customer owns only their profile/address/cart/orders/tickets/returns. Seller operator can manage only seller-scoped orders under assignment; no payout or bank data. Seller manager can manage own offers/inventory/prices and staff subject to grant. Seller owner can propose bank detail changes, manage members with no privilege escalation. Warehouse worker limited to assigned center and task and minimum address data for label. Moderator can review seller/catalog but cannot post ledger. Support reads only necessary order/ticket and cannot refund without finance role. Finance approval maker-checker and audited. Super admin cannot bypass dual-control secrets and payouts. Auditor read-only.
+For every endpoint test unauthorized, cross-seller IDOR, customer order IDOR, user-supplied seller_id spoofing, privilege escalation and indirect object reference via attachments. MFA for admins, rotated refresh tokens, secret manager, outbound webhook allowlisting where possible, content scanning, encryption and backup restore. Log actor/request/trace_id but redact tokens, OTP, card, bank secrets and unnecessary PII.
+
+
+35. TO‘LIQ TZ: TEST AND RELEASE GATES
+Unit: price arithmetic, commission, discount allocation, tax snapshot, finite-state transitions. Integration: DB stock concurrency, idempotency, outbox inbox, ledger balancing. Contract: DTO, error shape, auth/RBAC, provider protocol. E2E Playwright buyer/seller/admin/WMS, Flutter widget/integration, Android/iOS device tests. k6 browse/search/checkout scenarios, 2 buyers racing last unit, provider outage/retry and WMS worker simultaneous claim.
+Blocking test cases: stock=1 both reserve concurrent (exactly one success), duplicate payment webhook (one ledger transaction), late payment after expiry (no invalid fulfillment), multi-seller partial cancel, partial refund (balanced entries), cross-tenant seller denial, inbound 100/received 98 discrepancy, quarantined stock cannot sell, wrong bin scan denied, shipment cannot DELIVERED without proof, price changes require new quote.
+Release requires zero unresolved P0/P1 security/integrity defects, successful backup restore, provider sandbox reconciliation, documented legal/fiscal review, pilot seller flow and rollback checklist. Performance targets p95 catalog 300ms/search 500ms/checkout 800ms excluding provider are proposed not guaranteed and need test evidence.
+
+
+36. TO‘LIQ TZ: CLAUDE EXECUTION PLAN
+Do not assume that reading this document alone grants access to repository, provider credentials or legal approvals. First inspect repository and current tests, identify missing requirements, create docs/traceability.md with requirement IDs, implementation status and test refs. Create ADRs, complete Prisma migrations, full OpenAPI specifications, ERD diagrams, BPMN XML, UI wireframes and deterministic seed. Work in verified milestone order: G0 repo/CI/auth; G1 seller/KYB; G2 catalog/offers; G3 inventory + WMS receiving; G4 cart/checkout/orders with mock PSP; G5 sandbox Click/Payme, ledger/refund; G6 shipping + WMS picking/packing; G7 full web UIs; G8 Flutter apps; G9 hardening/observability/pilot.
+Every PR: code diff, migration, API contract, authorization checks, tests, screenshot evidence, no failing lint/typecheck, deployment note. Production payment integration BLOCKED until official merchant docs, credentials, signed callbacks and settlement contracts approved. Don't copy Uzum's interface/assets. No fake claimed tests, no destructive DB operation or live deployment without owner's explicit approval. Milestone report must include completed IDs, changed files, commands, test results and outstanding blockers.

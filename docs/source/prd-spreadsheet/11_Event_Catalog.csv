@@ -1,0 +1,10 @@
+Event,Publisher,Consumers
+order.created.v1,ORD,"PAY, INV"
+inventory.reserved.v1,INV,ORD
+payment.succeeded.v1,PAY,"ORD, FIN"
+payment.failed.v1,PAY,"ORD, INV"
+order.confirmed.v1,ORD,"FUL, LOG"
+shipment.delivered.v1,LOG,"ORD, FIN"
+return.approved.v1,OPS,"FUL, PAY"
+refund.completed.v1,PAY,"FIN, ORD"
+seller.payout_requested.v1,FIN,Admin/Bank integration

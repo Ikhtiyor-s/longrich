@@ -1,0 +1,46 @@
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# prisma
+prisma/*.db
+prisma/generated/
+
+# next.js
+next-env.d.ts
+
+# test / coverage
+coverage/
+
+# OTel FileSpanExporter output (T-G0-6) — curated evidence snapshots live
+# under docs/evidence/ instead, committed deliberately.
+var/telemetry/
+
+# flutter (apps/mobile is scaffolded in a later milestone, ignore its build artifacts up front)
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies

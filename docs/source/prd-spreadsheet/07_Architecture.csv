@@ -1,0 +1,12 @@
+Layer,Component,Stack,Notes
+Presentation,Buyer Web,Next.js,"SSR/SEO, responsive"
+Presentation,Seller/Admin/Warehouse,Next.js,Separately permissioned apps
+Presentation,Mobile,Flutter,Android and iOS
+Core,API,NestJS TypeScript,Modular monolith
+Data,Transactional DB,PostgreSQL,Transaction consistency
+Data,Cache and jobs,Redis + BullMQ,Retry and background jobs
+Search,Full-text,OpenSearch,Facets and search
+Files,Media storage,MinIO/S3,"Signed URLs, malware scan"
+Edge,TLS and routing,Nginx or Traefik,Rate limit
+Telemetry,Logs/traces/metrics,"OTel, Grafana, Loki, Prometheus",Tracing and alerting
+Deploy,CI/CD,"Docker, GitHub Actions",Testing and release

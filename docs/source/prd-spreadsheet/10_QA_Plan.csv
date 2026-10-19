@@ -1,0 +1,13 @@
+Test category,Minimum scenarios
+Unit,Commission rounding and price snapshots
+Integration,Atomic reservation and outbox
+API Contract,"Auth, schemas, idempotency"
+E2E,Multi-seller purchase to delivery
+Security,"RBAC, IDOR, replay, injection"
+Concurrency,Last item two simultaneous checkouts
+Payment,"Duplicate callback, timeout, late confirmed"
+Finance,"Balanced ledger, partial refund"
+Warehouse,"Inbound mismatch, QC, picking and scanning"
+Mobile,"Offline, push, deep links, session"
+Recovery,Backup restore and retry queue
+Performance,"Catalog, search and checkout p95"

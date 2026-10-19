@@ -1,0 +1,505 @@
+﻿LONGRICH MARKETPLACE — NEW FEATURES: COMPLETE FUNCTIONAL TZ v2.4
+
+
+R1–R4 | 22 features | Approved business decisions | 18.10.2026
+
+
+SCOPE: Extension to 36-section Master TZ. Existing core remains source of truth. This tab defines functionality, UI flows, statuses, RBAC, data, APIs, exceptions and acceptance; API names are proposed contracts subject to OpenAPI validation.
+
+
+APPROVED DEFAULTS: Verified purchase reviews only; review submission delivered_at+90 days; price history append-only subject to retention policy; public prices + privacy-safe aggregated statistics; Longrich-owned + partner PVZs, pickup hold 5 days (120 hours); automated repricing within ±10% cumulative 24h anchored baseline; B2B wholesale price tiers + custom RFQ, quote 7 days (168 hours).
+
+
+OPEN DECISIONS (DO NOT INVENT): PVZ closed periods extension/reroute rule; published reviews after return; B2B quote renegotiation expiry reset; paid ads pricing contract, referral monetary treatment, historical archival retention exception; pricing anchor changes due manual updates; partner settlements legal model.
+
+
+GLOBAL RULES: Multi-tenancy and least privilege. No product duplicate canonical cards; never bypass reservation idempotency. Every write audit actor/time/before/after. Provider-native callbacks. Price/bonus/ad events connect to finance ledger, never arbitrary balance writes. All 22 features behind scoped feature flags (GLOBAL, CATEGORY, SELLER, REGION, PVZ as applicable). Cross-seller confidential analytics prohibited.
+
+
+ROLE AND PERMISSION MATRIX: Buyer owns compare/alerts/reviews/questions/visual search. Verified purchase order item required for reviews. Seller owner/authorized manager imports/catalog integration/repricing/ads/bundles; seller operator scoped inventory only. PVZ partner owner manages own location data; operator scans own parcels; warehouse QC handles return disposition. Moderator reviews public content, admin controls policy, Finance manager handles monetary approvals with maker-checker, B2B buyer authorized company member accepts quotes. No actor gets all operations solely because frontend exposes them.
+
+
+ACCEPTANCE FRAMEWORK: For each EXT item implement tests: success; invalid input; forbidden cross-tenant; duplicate replay; concurrency if inventory/finance involved; expired/archived state; audit and retry; user-facing feedback, plus responsive/mobile. Link EXT-ID to UI screen, Prisma migration, API OpenAPI operationId, event contract, test ID.
+
+
+RELEASES: R1 six features; R2 seven; R3 six; R4 three. Release gates require both existing Master TZ G0–G9 dependencies and extension test evidence.
+
+
+EXT-001 — Mahsulotlarni solishtirish [R1]
+
+
+Actors & screens: Buyer. UX steps: product detail → compare tray → 2–4 variant → attribute diff → offer → cart. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: ACTIVE,EXPIRED. Rules/invariants: same comparison category; global variant attributes; inactive offers flagged. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: max 4, comparison attribute schemas, category policies. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): comparison_lists,comparison_items,category_comparison_attributes. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/comparisons/{id}; POST /v1/comparisons/items; DELETE /v1/comparisons/items/{id}. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Archived item stays marked unavailable; mismatched category yields validation. Required acceptance: Given 2 compatible variants, compare returns aligned specs; unauthorized saved list denied. QA identifiers: EXT-001-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-002 — Narx tarixi va bildirishnomalar [R1]
+
+
+Actors & screens: Buyer/Seller. UX steps: product → history graph 7/30/90/365 → price target → alert → notification. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: ACTIVE,TRIGGERED,PAUSED,CANCELLED,EXPIRED. Rules/invariants: append-only price events; product-level benchmark differs offer-level history; duplicate event no duplicate push; retention policy based unlimited archive. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: chart interval; price threshold limits; dedupe; retention/archive. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): offer_price_history,product_price_daily_stats,price_alerts,price_alert_events. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/products/{id}/price-history; POST /v1/me/price-alerts; DELETE /v1/me/price-alerts/{id}. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Offer unpublished: history preserved but no invalid alert; rapid oscillation throttled. Required acceptance: Every actual price update traceable; single alert dispatch per price event. QA identifiers: EXT-002-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-003 — Seller savol-javobi [R1]
+
+
+Actors & screens: Buyer/Seller. UX steps: product/offer → submit question → moderation → seller answer → publish. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: PENDING_REVIEW,PUBLISHED,ANSWERED,REJECTED,HIDDEN. Rules/invariants: offer-targeted answers only seller owner; block spam/contact info; history of edits. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: moderation filters; reporting; SLA; seller restrictions. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): product_questions,product_answers,question_reports,question_moderation_events. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/products/{id}/questions; POST /v1/seller/questions/{id}/answers. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Suspended seller cannot publish; personal-order questions redirected support. Required acceptance: Cross-seller answer returns 403; rejected content not public. QA identifiers: EXT-003-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-004 — Foto/video sharhlar [R1]
+
+
+Actors & screens: Verified Buyer/Seller. UX steps: delivered order item → rating/text/media → moderation → publish → seller reply. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,PENDING_REVIEW,PUBLISHED,REJECTED,HIDDEN. Rules/invariants: verified purchase only; delivered_at + 90*24h UTC review submission window; one active review per order item; return does not automatically erase review. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: media limits; moderation; appeal; verified purchase policies. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): product_reviews,review_media,review_replies,review_reports. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/order-items/{id}/review; GET /v1/products/{id}/reviews; POST /v1/seller/reviews/{id}/reply. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: 91st day blocks; uploaded video failure preserves draft; invalid purchase denied. Required acceptance: 90-day boundary and seller cannot delete buyer review. QA identifiers: EXT-004-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-005 — Excel/CSV ommaviy import [R1]
+
+
+Actors & screens: Seller. UX steps: template → upload → parsing → row validation → preview → commit → report. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: UPLOADED,VALIDATING,READY,IMPORTING,COMPLETED,PARTIAL,FAILED. Rules/invariants: row-level errors; per-seller SKU dedup; global product matching; background jobs; commit once. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: file limit, templates, rate limits, job pause. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): catalog_import_jobs,catalog_import_rows,catalog_import_templates,catalog_import_errors. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/catalog/imports; POST /v1/seller/catalog/imports/{id}/commit; GET /v1/seller/catalog/imports/{id}. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: 1000 lines with 30 invalid: valid lines can commit, errors export; duplicate upload no dup offers. Required acceptance: Partial imports auditable and idempotent; invalid SKU mapping held. QA identifiers: EXT-005-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-006 — Barcode katalog matching [R1]
+
+
+Actors & screens: Seller. UX steps: scan GTIN → candidates → select variant / propose catalog item → offer. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: EXACT_MATCH,MULTIPLE_CANDIDATES,NOT_FOUND,REVIEW_REQUIRED. Rules/invariants: barcode and MXIK distinct; conflict requires review; seller can't alter canonical attributes. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: conflict queue; merge approvals; source provenance. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): product_identifiers,barcode_scan_events,catalog_match_candidates,product_merge_cases. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/catalog/lookup/barcode/{code}; POST /v1/seller/offers/from-catalog. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Same GTIN conflicting variants blocks automatic merge. Required acceptance: Ten offers link one product variant rather than duplicate global products. QA identifiers: EXT-006-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-007 — Raqobatchi narxlari [R2]
+
+
+Actors & screens: Seller. UX steps: dashboard → own variant → public offer prices + aggregated benchmarks. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: FRESH,STALE,UNAVAILABLE. Rules/invariants: only public prices; aggregate stats threshold protects other sellers' private volume/cost; variant exact match. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: sample threshold; refresh age; anomaly monitoring. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): competitor_price_snapshots,offer_market_benchmarks. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/seller/pricing/benchmarks. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Few-seller aggregates suppressed; stale snapshot clearly labeled. Required acceptance: No competitor cost/profit leaked; variant benchmark valid. QA identifiers: EXT-007-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-008 — 1C Odoo POS API integratsiya [R2]
+
+
+Actors & screens: Seller/Integration Admin. UX steps: connection → credentials → field mapping → test → enable → sync jobs. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,TESTING,ACTIVE,DEGRADED,PAUSED,ERROR. Rules/invariants: one field source-of-truth; idempotent webhook; conflict queue; protected secrets and retry. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: adapter enable/version; rate limits; outage dashboard. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): integration_connections,integration_credentials,integration_mappings,integration_sync_jobs,integration_events,integration_errors. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/integrations; POST /v1/seller/integrations/{id}/test; GET /v1/seller/integrations/{id}/sync-jobs. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Provider down backoff; SKU conflict quarantined; duplicate callback ignored. Required acceptance: 3 identical updates result one business transition. QA identifiers: EXT-008-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-009 — Foyda xarajat analitikasi [R2]
+
+
+Actors & screens: Seller/Finance. UX steps: seller dashboard → period SKU/category → cost/fees/shipping/ads/refunds → margin. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: CALCULATING,READY,PARTIAL,FAILED. Rules/invariants: cost seller private; provisional vs realized; missing COGS displays incomplete not inflated profit. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: expense categories; permission scopes; exports. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): seller_product_costs,seller_expense_entries,seller_profit_snapshots,cost_allocation_rules. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/seller/analytics/profit; POST /v1/seller/costs. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Missing COGS yields INCOMPLETE_DATA; reversal affects profit periods. Required acceptance: Net margin reconciles to ledger with explicit unmapped costs. QA identifiers: EXT-009-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-010 — PVZ (Longrich + hamkor) [R2]
+
+
+Actors & screens: Buyer/PVZ Partner/Operator. UX steps: checkout map → selected PVZ → carrier transit → READY_FOR_PICKUP → scan → collected. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: PENDING,ACTIVE,PAUSED,CLOSED; IN_TRANSIT,READY_FOR_PICKUP,PICKED_UP,RETURNING,PICKUP_EXPIRED. Rules/invariants: own and partner PVZ tenant scope; hold 5 days = 120h from ready timestamp; capacity and opening-hours checks; closed-period handling policy still open. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: PVZ onboarding; tariffs; partner settlement; capacity; SLA; five-day policy. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): pickup_points,pickup_point_hours,pickup_point_capacity,pickup_point_staff,pickup_point_parcels,pickup_expiration_policies,pvz_partner_settlements. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/pickup-points; POST /v1/admin/pickup-points; POST /v1/pvz/parcels/{id}/receive. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Closed PVZ no new checkout; parcel at point triggers exception/manual reroute; expired pickup return policy. Required acceptance: 5-day deadline calculated, owner/partner data isolated and handover auditable. QA identifiers: EXT-010-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-011 — QR buyurtmani topshirish [R2]
+
+
+Actors & screens: Buyer/PVZ Operator. UX steps: order detail → expiring QR → operator scanner → server verify → handover. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: ISSUED,VERIFIED,CONSUMED,EXPIRED,REVOKED. Rules/invariants: short-lived opaque single-use token; point binding; no PII embedded; delivery proof. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: token TTL; risk policy; scanner audit. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): handover_tokens,handover_attempts,handover_confirmations. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/orders/{id}/pickup-token; POST /v1/pvz/handover/verify. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Replay denied; wrong PVZ 403; offline not accepted by default. Required acceptance: Exactly one pickup event and shipment DELIVERED proof. QA identifiers: EXT-011-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-012 — Qaytarilgan mahsulotlar QC [R2]
+
+
+Actors & screens: Warehouse QC/Seller. UX steps: return intake → scan serial/pack → inspection evidence → restock/repair/quarantine/write-off. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: PENDING_INSPECTION,IN_PROGRESS,PASSED,FAILED,ESCALATED. Rules/invariants: refund separate from stock restock; quarantine not sellable; write-off approval. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: QC templates, defect causes, inspector authorization. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): return_inspections,inspection_checklists,inspection_evidence,restock_decisions,damage_reports. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/warehouse/returns/{id}/inspect; POST /v1/warehouse/returns/{id}/decision. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Wrong serial escalated; partial contents quarantined. Required acceptance: Stock available only after restock QC pass and movement posting. QA identifiers: EXT-012-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-013 — Mahsulot bundle va komplekt [R2]
+
+
+Actors & screens: Seller/Buyer. UX steps: seller compose variants → bundle price → review → buyer bundle checkout. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,PENDING_REVIEW,ACTIVE,PAUSED,ARCHIVED. Rules/invariants: atomically reserve all components; fixed/configurable; per-item tax/discount and refund allocation. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: bundle moderation and fake discount detection. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): product_bundles,bundle_components,bundle_price_allocations. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/bundles; GET /v1/bundles/{id}; POST /v1/cart/bundles. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Single missing component rejects fixed bundle without partial reservation. Required acceptance: All component stock committed or all released. QA identifiers: EXT-013-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-014 — AI tavsif va SEO [R3]
+
+
+Actors & screens: Seller/Admin. UX steps: select attributes/media → generate → editable draft → approve/moderate → publish. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: QUEUED,GENERATING,DRAFT_READY,APPROVED,REJECTED,FAILED. Rules/invariants: no invented certificate warranty medical claim; human confirmation; versioned generation. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: model quotas/cost; prompt versions; safety policy. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): ai_generation_jobs,ai_content_drafts,ai_prompt_versions,ai_usage_records. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/ai/content; POST /v1/seller/ai/drafts/{id}/accept. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: AI outage manual authoring; hallucinated spec held. Required acceptance: Unverified fact never automatically published. QA identifiers: EXT-014-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-015 — Ombor qoldig‘i prognozi [R3]
+
+
+Actors & screens: Seller/WMS. UX steps: sales history → forecast → estimated days stock → reorder suggestion. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: PENDING,READY,INSUFFICIENT_DATA,STALE,FAILED. Rules/invariants: model uncertainty; lead time, seasonal demand, promotional spikes; no auto PO without authorization. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: forecast config, accuracy and quality. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): inventory_forecasts,demand_daily_metrics,replenishment_suggestions. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/seller/analytics/inventory-forecast. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Insufficient data explicitly indicated; abnormal spikes reconsidered. Required acceptance: Forecast never mutates on-hand stock. QA identifiers: EXT-015-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-016 — Seller reklama kabineti [R3]
+
+
+Actors & screens: Seller/Ads Admin. UX steps: create campaign → budget → moderation → serving → metrics & billing. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,PENDING_REVIEW,SCHEDULED,ACTIVE,PAUSED,BUDGET_EXHAUSTED,COMPLETED. Rules/invariants: sponsored labels; dedupe click charges; campaigns active offer only; spend bound by budget. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: placement, billing, fraud, approvals. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): ad_campaigns,ad_groups,ad_placements,ad_impressions,ad_clicks,ad_spend_ledger. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/ads/campaigns; GET /v1/seller/ads/reports. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Fraud clicks rejected from billing; budget stop honors in-flight reconciliation. Required acceptance: Sponsored disclosure and balanced billing ledger. QA identifiers: EXT-016-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-017 — Referral bonus [R3]
+
+
+Actors & screens: Buyer/Loyalty Admin. UX steps: share referral → attributed signup → qualifying delivered purchase → award/spend. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: PENDING,QUALIFIED,REWARDED,REVERSED,EXPIRED. Rules/invariants: self-referral disallowed, return reverses earned bonus, marketing consent, rewards not cash-out without legal review. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: anti-fraud, cap, expiry, campaign terms. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): referral_codes,referral_attributions,bonus_accounts,bonus_transactions,bonus_campaign_rules. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/me/referrals; GET /v1/me/bonuses. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Same order triggers reward once; refunded order reverses bonus. Required acceptance: No negative unbounded bonus debt and auditable changes. QA identifiers: EXT-017-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-018 — Rasm orqali qidirish [R3]
+
+
+Actors & screens: Buyer/AI Admin. UX steps: upload/photo → object crop → visual similarity → catalog hits. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: UPLOADED,PROCESSING,COMPLETED,NO_MATCH,FAILED. Rules/invariants: not guaranteed exact identification; private image retention and moderation. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: AI model, quotas and quality dashboards. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): visual_search_jobs,product_embeddings,visual_search_feedback. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/search/visual; GET /v1/search/visual/{id}. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Unsupported/huge image rejected; no catalog hit returns NO_MATCH. Required acceptance: No invented product result; privacy retention enforced. QA identifiers: EXT-018-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-019 — Avtomatik repricing [R3]
+
+
+Actors & screens: Seller Owner/Manager. UX steps: configure floors/ceilings/margins → simulation → enable → scheduled runs. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,SIMULATED,ACTIVE,PAUSED,GUARDRAIL_BLOCKED,DISABLED. Rules/invariants: 24-hour cumulative automatic change capped ±10% versus anchored reference, can't reset cap with micro-steps; seller price floor and margin guardrail. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: global/category/seller emergency pause; cooldown; audit. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): repricing_rules,repricing_executions,repricing_approvals,repricing_guardrails. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/repricing/rules; POST /v1/seller/repricing/{id}/simulate; POST /v1/seller/repricing/{id}/activate. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Stale benchmark pauses; proposal below floor blocked; 10% cumulative exceeded blocked. Required acceptance: All auto price updates audited and within limits. QA identifiers: EXT-019-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-020 — Live Shopping [R4]
+
+
+Actors & screens: Seller/Buyer/Moderator. UX steps: schedule live → attach active offers → stream/chat → quick cart → normal checkout → replay. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,SCHEDULED,LIVE,RECONNECTING,ENDED,CANCELLED,SUSPENDED. Rules/invariants: live only eligible sellers, current price/stock server verified, moderated chat, stream recording retention. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: permissions, stream infra, abuse response. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): live_sessions,live_session_products,live_chat_messages,live_moderation_events,live_stream_metrics. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/seller/live/sessions; GET /v1/live/{id}; POST /v1/live/{id}/cart. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Streamer disconnected leaves orders intact; removed offer can't checkout. Required acceptance: Live product availability and checkout consistent. QA identifiers: EXT-020-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-021 — B2B ulgurji savdo [R4]
+
+
+Actors & screens: Business Buyer/Seller/B2B Admin. UX steps: business KYB → quantity tiers or RFQ → quote negotiation → acceptance → order. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: DRAFT,SUBMITTED,COUNTER_OFFERED,ACCEPTED,REJECTED,EXPIRED,CONVERTED. Rules/invariants: MOQ/tier price for verified business account; individual quote valid 7 days=168h from issue; quote immutable snapshot/versioned, stock checked again at order; no implied credit extension. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: B2B eligibility, contract docs, approval thresholds. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): business_accounts,business_account_members,wholesale_price_tiers,quotation_requests,commercial_quotes,purchase_approvals. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): POST /v1/b2b/rfqs; POST /v1/seller/b2b/quotes; POST /v1/b2b/quotes/{id}/accept. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Quote expired blocked; insufficient stock prevents order, renegotiation creates version per policy pending. Required acceptance: B2C cannot use B2B tier; accepted quote exact snapshot. QA identifiers: EXT-021-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+EXT-022 — Seller mobil ilovasi [R4]
+
+
+Actors & screens: Seller Owner/Staff. UX steps: login → store switch → orders/scan inventory/prices → queue sync. Responsive screen needs loading/empty/error/offline, field validation and confirmation of sensitive changes.
+
+
+State model: QUEUED,SYNCING,SYNCED,CONFLICT,FAILED. Rules/invariants: shared backend/RBAC, offline never finalizes stock/payment, optimistic version check, revoke session. Illegal status transition → 409 INVALID_STATE_TRANSITION, unauthorized resource → 403/404, validation → 422.
+
+
+Super Admin controls: min version, device revocation, sync policy. Must provide audit trail, scope-bound feature flag, policy version, incident monitoring and role-based permissions.
+
+
+DB entities (proposed): seller_devices,seller_mobile_sessions,mobile_sync_operations,mobile_conflict_records. All have UUID IDs, timestamps, actor references, foreign keys, seller/owner scope where applicable; unique/dedup and indexes by query patterns.
+
+
+REST API (proposed): GET /v1/seller/mobile/config; POST /v1/seller/mobile/sync. Contract requires DTO, pagination where lists, errors, idempotency for unsafe actions, auth tests and OpenAPI examples.
+
+
+Exception / recovery: Offline stale price yields conflict; revoked employee token rejected. Required acceptance: No stale mobile update silently overwrites newer server data. QA identifiers: EXT-022-AC-01 success; -02 invalid; -03 forbidden; -04 retry/dedupe; -05 expiry/state; -06 admin audit.
+
+
+CROSS-MODULE EVENT CATALOG
+
+
+review.submitted.v1, review.published.v1, product.question.created.v1, offer.price_changed.v1, price.alert.triggered.v1, integration.sync_failed.v1, pickup.ready.v1, pickup.handed_over.v1, return.qc_completed.v1, bundle.reservation_failed.v1, ads.spend_posted.v1, referral.rewarded.v1, referral.reversed.v1, repricing.rule_blocked.v1, b2b.quote_accepted.v1, live.started.v1, seller_mobile.sync_conflict.v1. Each emitted via transactional outbox where durable state changes require it; inbox dedupe for downstream.
+
+
+ADMIN INFORMATION ARCHITECTURE
+
+
+Product Intelligence: compare attributes, barcode conflicts, imports; Community: questions/reviews; Pricing Center: history, benchmarks, repricing; Integration Hub: adapters, sync, credentials refs; Seller Analytics: profit and expense access; PVZ Network: centers/partners/capacity/handover settlement; Return QC: reasons/templates; AI Center: models quotas; Ads: campaigns/fraud/billing; Loyalty: rewards/fraud; B2B: company verification/quote approvals; Live Commerce: live sessions/abuse; Mobile Management: device policies.
+
+
+MILESTONE HANDOFF AND DEFINITION OF DONE
+
+
+For every feature: Figma/wireframe or UI route, ERD migration with constraints, generated OpenAPI, auth policy tests, unit+integration+E2E, sample seeded scenario, telemetry dashboard, runbook for admin/support, feature flag rollback, technical release note. Do not claim complete from skeleton or mocks.

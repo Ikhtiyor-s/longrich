@@ -1,0 +1,49 @@
+Rule ID,Module,Rule / invariant,Priority,Responsible,Decision state
+BR-WEB-01,WEB,Guest katalogni ko‘radi; purchase requires verified phone,P0,QA + Business,Approved for design
+BR-WEB-02,WEB,Price and stock authoritative on backend,P0,QA + Business,Approved for design
+BR-WEB-03,WEB,Localization va responsive talablar platforma bo‘ylab bir xil,P0,QA + Business,Approved for design
+BR-SEL-01,SEL,Seller ACTIVE faqat moderator approvaldan keyin,P0,QA + Business,Approved for design
+BR-SEL-02,SEL,Seller ma’lumotlari seller_id scope bilan ajratiladi,P0,QA + Business,Approved for design
+BR-SEL-03,SEL,Suspended seller yangi checkoutga kiritilmaydi,P0,QA + Business,Approved for design
+BR-CAT-01,CAT,Product != Variant != SellerOffer,P0,QA + Business,Approved for design
+BR-CAT-02,CAT,Global product content moderator-controlled,P0,QA + Business,Approved for design
+BR-CAT-03,CAT,"Barcode collision auto merge emas, conflict review",P0,QA + Business,Approved for design
+BR-CAT-04,CAT,Historical price snapshots immutable,P0,QA + Business,Approved for design
+BR-INV-01,INV,available=on_hand-reserved-blocked,P0,QA + Business,Approved for design
+BR-INV-02,INV,Atomic reserve and invariant >=0,P0,QA + Business,Approved for design
+BR-INV-03,INV,Release/commit idempotent,P0,QA + Business,Approved for design
+BR-INV-04,INV,Late confirmed payment triggers recovery,P0,QA + Business,Approved for design
+BR-ORD-01,ORD,Quote revalidated before purchase,P0,QA + Business,Approved for design
+BR-ORD-02,ORD,MasterOrder suborders by seller/fulfillment,P0,QA + Business,Approved for design
+BR-ORD-03,ORD,Partial cancellation other suborders unchanged,P0,QA + Business,Approved for design
+BR-ORD-04,ORD,No fulfillment before verified payment,P0,QA + Business,Approved for design
+BR-FIN-01,FIN,"Money in minor units, commission rate bps",P0,QA + Business,Approved for design
+BR-FIN-02,FIN,"Ledger debits=credits, entries immutable",P0,QA + Business,Approved for design
+BR-FIN-03,FIN,Order-item commission snapshot persists,P0,QA + Business,Approved for design
+BR-FIN-04,FIN,Provider bank settlement verification before paid payout,P0,QA + Business,Approved for design
+BR-LOG-01,LOG,No offer for undeliverable zone,P0,QA + Business,Approved for design
+BR-LOG-02,LOG,Shipment has unique tracking code,P0,QA + Business,Approved for design
+BR-LOG-03,LOG,Delivered requires proof per policy,P0,QA + Business,Approved for design
+BR-LOG-04,LOG,Seller only sees its shipments,P0,QA + Business,Approved for design
+BR-ADM-01,ADM,Admin action permission based and auditable,P0,QA + Business,Approved for design
+BR-ADM-02,ADM,Refund/payout limit may require two approvals,P0,QA + Business,Approved for design
+BR-ADM-03,ADM,Audit logs immutable to normal admins,P0,QA + Business,Approved for design
+BR-OPS-01,OPS,Total refund <= captured payment,P0,QA + Business,Approved for design
+BR-OPS-02,OPS,Return windows follow law and category policy,P0,QA + Business,Approved for design
+BR-OPS-03,OPS,Support internal notes hidden from buyer,P0,QA + Business,Approved for design
+BR-OPS-04,OPS,Only published SEO pages indexed,P0,QA + Business,Approved for design
+BR-OPS-05,OPS,Marketing notifications require consent,P0,QA + Business,Approved for design
+BR-MOB-01,MOB,Backend is source of truth,P0,QA + Business,Approved for design
+BR-MOB-02,MOB,Payment deep link not proof of payment,P0,QA + Business,Approved for design
+BR-MOB-03,MOB,Offline mode cannot confirm checkout,P0,QA + Business,Approved for design
+BR-MOB-04,MOB,Device tokens kept securely,P0,QA + Business,Approved for design
+BR-PAY-01,PAY,Verify signed provider callback,P0,QA + Business,Approved for design
+BR-PAY-02,PAY,Never trust success return URL,P0,QA + Business,Approved for design
+BR-PAY-03,PAY,Deduplicate callbacks,P0,QA + Business,Approved for design
+BR-PAY-04,PAY,Provider-specific refund capability,P0,QA + Business,Approved for design
+BR-PAY-05,PAY,Late paid reservation reconciled safely,P0,QA + Business,Approved for design
+BR-FUL-01,FUL,Seller stock ownership preserved in platform warehouse,P0,QA + Business,Approved for design
+BR-FUL-02,FUL,QC rejected stock unsellable,P0,QA + Business,Approved for design
+BR-FUL-03,FUL,Picking matches reserved items,P0,QA + Business,Approved for design
+BR-FUL-04,FUL,Scan-driven location checks,P0,QA + Business,Approved for design
+BR-FUL-05,FUL,Inventory corrections require audit approval,P0,QA + Business,Approved for design

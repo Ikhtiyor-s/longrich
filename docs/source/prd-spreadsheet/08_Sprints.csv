@@ -1,0 +1,10 @@
+Sprint range,Deliverable
+01-02,"Foundation, Identity, RBAC, CI/CD, audit"
+03-04,"Seller, Catalog, Barcode/MXIK, moderation"
+05-06,"Inventory, reservation, receiving"
+07-08,"Cart, checkout, master/suborders"
+09-10,"Click/Payme, ledger, refund"
+11-12,"Delivery, picking, packing"
+13-14,"Buyer web, seller/admin/warehouse UI"
+15-16,Flutter Android and iOS
+17-18,"E2E, security, performance, pilot"

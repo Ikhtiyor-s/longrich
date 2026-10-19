@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+.next
+.turbo
+coverage
+pnpm-lock.yaml
+prisma/migrations
+apps/mobile
+
+# Pre-existing frozen docs/ticket content this ticket does not own/reformat.
+docs/
+tickets/

@@ -1,0 +1,37 @@
+{
+  "name": "longrich",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "pnpm@9.4.0",
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:test:migrations": "node --import tsx --test prisma/test/migration.test.ts",
+    "dev:up": "docker compose -f docker-compose.dev.yml up -d --build",
+    "dev:down": "docker compose -f docker-compose.dev.yml down",
+    "dev:logs": "docker compose -f docker-compose.dev.yml logs -f"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@prisma/client": "6.19.3",
+    "prettier": "3.9.10",
+    "prisma": "6.19.3",
+    "tsx": "4.20.6",
+    "turbo": "2.11.9"
+  }
+}

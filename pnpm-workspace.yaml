@@ -1,0 +1,6 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  # apps/mobile is a Flutter app (pubspec.yaml, not package.json) and is never
+  # a pnpm workspace member — see docs/architecture/repo-structure.md.
+  - '!apps/mobile'

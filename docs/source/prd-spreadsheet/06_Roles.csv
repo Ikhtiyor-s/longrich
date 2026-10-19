@@ -1,0 +1,18 @@
+Role,Permissions summary
+Guest,Public catalog
+Customer,"Cart, order, refund, profile"
+Seller Owner,"Store, staff, finance"
+Seller Manager,"Catalog, order, inventory"
+Seller Operator,"Picking, shipping"
+Courier,Assigned shipments
+Warehouse Manager,Fulfillment operations
+Receiving Operator,Inbound receipt
+QC Inspector,Inspect/quarantine
+Picker,Picking task
+Packer,Packing parcels
+Dispatcher,Dispatch
+Support Agent,"Tickets, dispute routing"
+Moderator,Product and seller review
+Finance Manager,"Ledger reports, payout approvals"
+Super Admin,Platform configuration and roles
+System Auditor,Read-only audit
