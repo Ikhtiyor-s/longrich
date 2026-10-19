@@ -7,6 +7,9 @@ primary_region = 'fra'
 [build]
   dockerfile = 'infra/docker/web-buyer.Dockerfile'
 
+[env]
+  API_BASE_URL = 'https://longrich-api.fly.dev'
+
 [http_service]
   internal_port = 3000
   force_https = true

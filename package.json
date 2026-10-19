@@ -19,6 +19,7 @@
     "db:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
     "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts",
+    "db:demo-seed": "tsx prisma/demo-seed.ts",
     "db:test:migrations": "node --import tsx --test prisma/test/migration.test.ts",
     "dev:up": "docker compose -f docker-compose.dev.yml up -d --build",
     "dev:down": "docker compose -f docker-compose.dev.yml down",
