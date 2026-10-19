@@ -1,0 +1,17 @@
+# fly.toml for the background worker (apps/api/src/worker.main.ts) — same codebase
+# and image build as fly.toml (the HTTP api), different Dockerfile entrypoint.
+# Deploy with: fly deploy -c fly.worker.toml --app longrich-worker
+
+app = 'longrich-worker'
+primary_region = 'fra'
+
+[build]
+  dockerfile = 'infra/docker/worker.Dockerfile'
+
+[processes]
+  app = 'node apps/api/dist/worker.main.js'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
