@@ -1,4 +1,6 @@
-// Placeholder — G0 scaffold only. First real component lands with G7 ("full
-// web UIs" milestone per docs/traceability.md), building an original design
-// system (no 1:1 copy of any third-party marketplace UI, per TZ §21).
-export type PlaceholderShouldBeReplaced = never;
+export * from './AppShell/AppShell.js';
+export * from './Header/Header.js';
+export * from './MobileNav/MobileNav.js';
+export * from './SearchCombobox/SearchCombobox.js';
+export * from './Breadcrumb/Breadcrumb.js';
+export * from './icons/index.js';

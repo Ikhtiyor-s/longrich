@@ -1,0 +1,35 @@
+.wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.button {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.toast {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--divider);
+  font-size: 12px;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-button);
+  white-space: nowrap;
+}
