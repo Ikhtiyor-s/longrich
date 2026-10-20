@@ -225,6 +225,8 @@ Then HTTP 403 FORBIDDEN is returned — sellers never author global product data
 
 **Prisma models:** `Brand`, `Product`, `ProductVariant`, `ProductAttributeValue`, `ProductMedia`, `ModerationCase` (create only) — all owned/written by `catalog` module.
 
+**Confirmed live-code status (architect note, 2026-10-20 — not a shape change, a verification record):** `products.mapper.ts`/`variants.mapper.ts`'s `cover_media`/`media[]` are confirmed, by direct code read, to already be pre-filtered to `moderationStatus: 'APPROVED'` server-side on every public list/detail path (`products.service.ts`'s `PUBLIC_MEDIA_FILTER`/`PUBLIC_DETAIL_INCLUDE`) — a frontend consumer MUST NOT re-filter by `moderation_status` client-side; the field is present on the detail payload's `media[]` items for transparency only and will always read `"APPROVED"` on every item a public endpoint returns. Separately, `offers_summary` on both the list and detail payloads is confirmed, by direct code read, to still be **permanently hardcoded** to `emptyOffersSummary()` (`{active_offer_count:0, lowest_price_minor:null, currency:null}`) in the live codebase today — `T-G2-5` shipped the real offers CRUD/public-offers-list endpoints but never patched `products.mapper.ts`/`variants.mapper.ts` to query real aggregates, contrary to this document's original "T-G2-5 never changes this shape, only starts populating it with live aggregates" expectation. Logged as tech debt in `tickets/FOUND-DEBT.md` (2026-10-20 entry) — not fixed in this pass. Any consumer needing a real per-product/variant price or offer count MUST walk `variants[] → GET /v1/catalog/variants/{id}/offers` instead of trusting `offers_summary`, exactly as `docs/architecture/ui-contract-g7-buyer-catalog.md` freezes for the buyer-web Home/Category pages.
+
 ---
 
 ## `T-G2-4` — Barcode/MXIK identifiers (parallel pair with `T-G2-5`)
@@ -305,7 +307,7 @@ Only these caller-initiated transitions are permitted via this field, enforced s
 Same guard trio (list uses `MemberAccessGuard` resolved from the `seller_id` query param, same shape as `DashboardController`/`MembersController.list`). List is cursor-paginated, filterable by `status`. A seller calling either against another seller's offer → `403 FORBIDDEN`.
 
 ### `GET /v1/catalog/variants/{id}/offers` (public)
-**Lives in the `offers` module** (reads `seller_offers`, an offers-owned model) **despite its `/v1/catalog/...` URL prefix** — route path and owning module folder are independent, same non-issue as `finance.controller.ts` living in the `sellers` module; flagged explicitly so neither parallel-pair builder assumes URL prefix implies module home. Returns only offers whose own `status='ACTIVE'` **and** whose owning seller's `status='ACTIVE'` — both conditions enforced in the query, not filtered client-side. Cursor-paginated. Each item: `{ id, seller_id, seller_sku, price_minor, currency, fulfillment_mode }` (no `version`/internal fields — this is the public comparison view).
+**Lives in the `offers` module** (reads `seller_offers`, an offers-owned model) **despite its `/v1/catalog/...` URL prefix** — route path and owning module folder are independent, same non-issue as `finance.controller.ts` living in the `sellers` module; flagged explicitly so neither parallel-pair builder assumes URL prefix implies module home. Returns only offers whose own `status='ACTIVE'` **and** whose owning seller's `status='ACTIVE'` — both conditions enforced in the query, not filtered client-side. Cursor-paginated. Each item: `{ id, seller_id, seller_name, seller_sku, price_minor, currency, fulfillment_mode }` (no `version`/internal fields — this is the public comparison view). **`seller_name` added 2026-10-20 — see `## Clarifications (post-freeze)` at the end of this document; not part of the original G2 freeze.**
 
 **Given/When/Then:**
 ```
@@ -567,3 +569,29 @@ No other field-name, type, or route-shape contradiction was found between any tw
 - **No OpenSearch.** Explicit `T-G2-1` decision, carried through every endpoint above — every list/browse query here runs against Postgres behind the cursor-pagination convention, never a search index.
 - **No seller-facing "my product" authorship.** Confirmed throughout: sellers only ever create `seller_offers` against existing `PUBLISHED` variants (or, via `T-G2-8`, trigger creation of a `DRAFT` product that still must clear `T-G2-7`'s moderation) — never direct `products`/`product_variants` CRUD, which stays `category:manage`-gated admin-only.
 - **No reactivate-after-REJECTED path for offers or products.** `REJECTED` is treated as terminal in this contract (no ticket tests resurrecting a rejected offer/product); a seller/admin wanting to try again creates a new row. If this is wrong, it is a PM-level scope question, not a gap to silently patch here.
+
+---
+
+## Clarifications (post-freeze)
+
+### 2026-10-20 — additive `seller_name` field on `GET /v1/catalog/variants/{id}/offers`
+
+**Trigger:** `docs/open-questions.md` Addendum 6 #34 ("No public seller/storefront profile endpoint") surfaced during PM's `tickets/g7-buyer-web-catalog/` scoping pass. The buyer-web product-detail page (`T-G7C-5`) needs to show which seller is behind each offer in `OfferComparison` (DES-007: "compare offers by seller name..."), but the existing public offers endpoint only ever exposed `seller_id` (an opaque UUID, useless as buyer-facing copy).
+
+**Classified as a minor clarification, not a real design change** (per this document's own conflict-resolution rule and the architect's general protocol): no new endpoint, no new table, no migration — `sellers.display_name` (`VARCHAR(120)`, NOT NULL, added in `T-G1-6` specifically as the seller's *public-facing* storefront name, distinct from the private `legal_name`/`tax_id`) already exists and is exactly the "one minimal public field, nothing sensitive" shape this needed. The `offers` module's `public-offers` query already joins to `Seller` to enforce the existing `seller.status='ACTIVE'` filter (frozen in the original `GET /v1/catalog/variants/{id}/offers` section above) — adding `seller.displayName` to that same join's `select` is a one-line, additive, backward-compatible change.
+
+**Exact change (for the backend-dev ticket that implements this — not yet written as a ticket file; flag to PM to open a short one before/alongside `T-G7C-5`):**
+- `apps/api/src/modules/offers/offers.mapper.ts`: extend `PublicOfferRow` to also carry `seller: { displayName: string }` (via the query's `include`/`select`), and add `seller_name: offer.seller.displayName` to `toPublicOfferPayload`'s return, positioned directly after `seller_id` in the object literal (cosmetic, matches the frozen response field order below).
+- `apps/api/src/modules/offers/seller-offers.service.ts`: the `findMany` backing `GET /v1/catalog/variants/{id}/offers` (around the `toPublicOfferPayload` call site) adds `include: { seller: { select: { displayName: true } } }` (or equivalent `select`). No change to the `WHERE` clause's existing `status='ACTIVE' AND seller.status='ACTIVE'` filter.
+- No change to `POST`/`PATCH /v1/seller/offers` or `toOfferPayload` (the seller's own authenticated view) — this is additive to the **public comparison view only**.
+
+**New frozen item shape for `GET /v1/catalog/variants/{id}/offers`:**
+```json
+{ "id": "...", "seller_id": "...", "seller_name": "Tashkent Electronics LLC", "seller_sku": "SKU-001",
+  "price_minor": "4500000", "currency": "UZS", "fulfillment_mode": "SELLER_WAREHOUSE" }
+```
+`seller_name` is always a non-empty string (schema-guaranteed `NOT NULL`) — never `null`, never a fabricated fallback like `"Noma'lum sotuvchi"`.
+
+**Explicitly NOT extended by this clarification:** `GET /v1/catalog/products` (list) and `GET /v1/catalog/products/{id}` (detail)'s `offers_summary` shape is **unchanged** — it stays `{ active_offer_count, lowest_price_minor, currency }`, no seller identity added. Reason: a product's `offers_summary` aggregates across potentially multiple sellers (DES-005: "different sellers' offers must not silently combine prices, stock or delivery terms"), so there is no single correct "the seller" to attach to a product-level card. Seller identity belongs only where offers are enumerated individually — i.e. `OfferComparison`/this endpoint — not on `ProductCard`. See `docs/architecture/ui-contract-g7-buyer-catalog.md`'s "Decisions superseding pm's gaps" section for the full reasoning.
+
+**Status:** Documented here as the frozen target shape. **Not yet implemented in `apps/api` as of 2026-10-20** — confirmed by direct code read of `offers.mapper.ts`/`seller-offers.service.ts` (both still only return `seller_id`, no `seller`/`displayName` join). `T-G7C-2`/`T-G7C-5` frontend-dev agents MUST verify this field is actually live on the deployed API (`https://longrich-api.fly.dev`) before wiring `OfferComparison`'s `sellerName` prop to it; if not yet deployed, that is a blocking cross-ticket dependency — surface it via `tickets/QUESTIONS.md`, do not invent a fallback seller name.

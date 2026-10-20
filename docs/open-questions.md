@@ -230,3 +230,25 @@ New, milestone-specific unknown hit while writing `tickets/g2/*.md`. Same rule a
 ## Rule for all agents working this project (catalog track addendum)
 
 Same rule as every prior addendum: do not invent an answer to item 32 above in code, copy, config, or by hardcoding a guessed MXIK code list. A nullable, versioned, explicitly-unverified column is the correct G2-scope answer; a live validation integration is not built until the business owner names the authoritative source.
+
+---
+
+## Addendum 6 (added by PM pass, G7 buyer-web-catalog-slice ticket scoping — 2026-10-20)
+
+New, milestone-slice-specific unknowns hit while writing `tickets/g7-buyer-web-catalog/*.md` (the buyer-facing web UI slice covering only home/category-browse/product-detail, scoped to G2's already-existing catalog/offers backend — not full G7). Same rule as always: flagged here, not resolved by guessing in a ticket, code comment, or config default.
+
+### 33. Product/ProductVariant slug field for SEO-friendly URLs
+**Unconfirmed:** `docs/source/longrich-design-system-v1.1.txt` DES-004 names the buyer product-detail route as `/product/[slug]`, but `prisma/schema.prisma`'s `Product`/`ProductVariant` models (confirmed by direct read, lines 691–748) have no `slug` column — only a UUID `id`. No ticket in G2 (`T-G2-1` through `T-G2-8`) added one. A real slug needs a uniqueness/collision policy (per-product? per-product+brand? frozen at creation, or re-derived on title edit — and if frozen, what happens to old links after a title edit?) that is a product/SEO decision, not an engineering guess.
+**Needed to resolve:** Product/SEO decision on slug generation + uniqueness + edit-stability rule, then a backend ticket (new migration + backfill for existing rows) before any frontend route can use it.
+**Interim:** `tickets/g7-buyer-web-catalog/T-G7C-5`'s product-detail page uses `/product/[id]` (the existing UUID) instead of inventing a slug scheme. DES-004's literal `/product/[slug]` stays deferred until this is resolved and a backend migration ships. **Severity: MEDIUM** (not a BLOCKER — UUID URLs work functionally today; becomes a real SEO/URL-stability concern before a production launch, per DES-019's "SEO SSR first content" bar).
+
+### 34. No public seller/storefront profile endpoint
+**Unconfirmed:** DES-004 names `/stores` and `/stores/[slug]` buyer routes, and `GET /v1/catalog/variants/{id}/offers` already exposes a bare `seller_id` per offer — but no G1 or G2 ticket built a public (no-auth) seller-profile read endpoint. Every route in `apps/api/src/modules/sellers/*.controller.ts` is gated behind `JwtAuthGuard` (confirmed by direct grep across the module), meaning there is no backend today that can answer "what is this seller's name/banner/rating" for an unauthenticated buyer.
+**Needed to resolve:** A backend ticket (new public `GET /v1/sellers/{id}` or `/v1/stores/{slug}` endpoint, likely paired with a `slug` column on `sellers` too — same open question as #33, same team should decide both at once) — not scoped to G2, likely a short G7-prep backend addition.
+**Interim:** `tickets/g7-buyer-web-catalog/` does not build a store directory or storefront page — the task brief for that ticket set included one only "if `GET /v1/catalog/.../offers` supports it cleanly," and it does not (seller_id only, no name/profile data). `docs/traceability.md`'s new G7-slice mapping note records this exclusion explicitly. **Severity: MEDIUM** (not a BLOCKER for this slice; becomes one before any `/stores` page can be built).
+
+---
+
+## Rule for all agents working this project (buyer-web-catalog-slice addendum)
+
+Same rule as every prior addendum: do not invent a slug scheme or a seller-profile response shape to unblock `/product/[slug]` or `/stores` in code — ship against `/product/[id]` and skip the store directory, exactly as `tickets/g7-buyer-web-catalog/*.md` does, until items #33/#34 are resolved.
