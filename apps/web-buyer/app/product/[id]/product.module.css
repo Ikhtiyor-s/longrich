@@ -1,0 +1,252 @@
+.page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.breadcrumbWrapper {
+  margin-bottom: var(--space-4);
+}
+
+.mediaBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  max-width: 420px;
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--surface-alt);
+  border-radius: var(--radius-card);
+}
+
+.thumbStrip {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.thumb {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--divider);
+  background: var(--surface-alt);
+  cursor: pointer;
+  padding: 0;
+}
+
+.thumb:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.thumbActive {
+  border-color: var(--primary);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-1);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 1024px) {
+  .eyebrow {
+    font-size: 13px;
+  }
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 30px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .title {
+    font-size: 34px;
+  }
+}
+
+.variantGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.variantButton {
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-button);
+  border: 1px solid var(--divider);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.variantButton:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.variantButtonActive {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+
+.tabsWrapper {
+  margin-bottom: var(--space-6);
+}
+
+.tabList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--divider);
+  margin-bottom: var(--space-4);
+}
+
+.tab {
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+@media (min-width: 768px) {
+  .tab {
+    font-size: 15px;
+  }
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.tabActive {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tabPanel:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .description {
+    font-size: 15px;
+  }
+}
+
+.attributeList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.attributeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--divider);
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  .attributeRow {
+    font-size: 15px;
+  }
+}
+
+.attributeKey {
+  color: var(--text-secondary);
+}
+
+.attributeValue {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.ctaRow {
+  position: relative;
+  max-width: 360px;
+}
+
+.primaryCta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--divider);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.primaryCta:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.ctaMicroLabel {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+@media (min-width: 1024px) {
+  .ctaMicroLabel {
+    font-size: 13px;
+  }
+}
+
+.toast {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -32px;
+  background: var(--secondary);
+  color: var(--surface);
+  border-radius: var(--radius-button);
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+  text-align: center;
+}
