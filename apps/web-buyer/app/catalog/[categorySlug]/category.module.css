@@ -1,0 +1,86 @@
+.breadcrumbWrapper {
+  margin-bottom: var(--space-4);
+}
+
+.headingSkeletonWrapper {
+  max-width: 220px;
+  margin-bottom: var(--space-4);
+}
+
+.heading {
+  font-size: 20px;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .heading {
+    font-size: 22px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .heading {
+    font-size: 24px;
+  }
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .productGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1366px) {
+  .productGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.errorWrapper {
+  margin-top: var(--space-6);
+}
+
+.loadMoreWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+
+.loadMoreButton {
+  background: var(--primary);
+  color: var(--surface);
+  border: none;
+  border-radius: var(--radius-button);
+  padding: var(--space-3) var(--space-6);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.loadMoreButton:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.loadMoreButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.loadMoreButton:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
