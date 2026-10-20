@@ -15,3 +15,17 @@ Append-only. Logged by whichever agent discovers it, during whatever pass they w
 **Not fixed here.** No ticket in `tickets/g2/` or `tickets/g7-buyer-web-catalog/` tests or requires `offers_summary` to be real — fixing it would mean adding a live aggregate query to `products.service.ts`'s list/detail paths, which is backend-dev work, out of scope for the UI-contract-freeze pass that found it. Flagged so a future ticket (likely a small addition riding along with whichever milestone next touches `catalog/products`) closes this instead of someone re-discovering it mid-implementation and guessing a fix inline.
 
 **Severity:** MEDIUM — no data-integrity risk (the field is honestly zero/null, never fabricated), but a real functionality gap: product list/detail responses cannot answer "does this product have an active offer / what's its lowest price" today without the N+1 variants→offers walk.
+
+---
+
+## 2026-10-20 — `apps/web-buyer/app/home-client.module.css` uses hardcoded `#fff`/`#cfe6df` instead of `globals.css` tokens
+
+**Found by:** `frontend-dev` pass, `T-G7C-6` (responsive + accessibility verification pass).
+
+**What:** `.hero { color: #fff; }` (line 3), `.heroSubcopy { color: #cfe6df; }` (line 23), `.heroCta { color: #fff; }` (line 31), and `.toast { color: #fff; }` (line 112) all use literal hex values instead of an existing `globals.css` custom property, violating `T-G7C-1`'s frozen styling rule ("every color/spacing/radius value is an existing `globals.css` custom property... never a new hardcoded hex/px value"). `#fff` is functionally identical to `var(--surface)` (`#ffffff`) — a trivial one-token swap — but `#cfe6df` (the hero subcopy's muted-white-on-dark-teal tone) has no existing token equivalent at all.
+
+**Why it matters:** Contrast was checked as part of `T-G7C-6`'s verification pass and both values pass WCAG AA comfortably (`#fff` on `var(--secondary)`/`var(--primary)` ≈ 9–13:1; `#cfe6df` on `var(--secondary)` ≈ 9.1:1) — this is **not** an accessibility bug, only a styling-convention violation from `T-G7C-3`. Per `T-G7C-6`'s own instruction ("this is a verification pass only; no new ad-hoc color is introduced here... only touch colors if a real violation is found, and only by switching to an existing token"), this is not fixed inline since there is no contrast violation to justify touching it, and swapping `#cfe6df` would require minting a brand-new token, which is explicitly out of this pass's scope.
+
+**Not fixed here.** Flagged so a future ticket that revisits the Home hero section either (a) swaps `#fff`→`var(--surface)` as a zero-risk cleanup, or (b) if `#cfe6df` is still needed, gets a real token named for it in `globals.css` through the proper design-system channel rather than staying a one-off hex value.
+
+**Severity:** LOW — cosmetic/convention-only, zero user-facing or accessibility impact today.
